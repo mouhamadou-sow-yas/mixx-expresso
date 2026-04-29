@@ -1,0 +1,26 @@
+groups:
+  - name: mixx-expresso
+    rules:
+      - alert: AppDown
+        expr: up{job="mixx-expresso"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "mixx-expresso est DOWN"
+
+      - alert: HighRetryRate
+        expr: increase(retry_transactions_total[5m]) > 20
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Taux de retry élevé sur les transactions Expresso"
+
+      - alert: ExpressoHighErrorRate
+        expr: rate(retry_transactions_total{status="error"}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Taux d'erreur Expresso ERS > 10%"

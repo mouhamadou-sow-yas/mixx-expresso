@@ -1,0 +1,54 @@
+# ============================================================
+# mixx-expresso — Stack Production complète
+#
+# Prérequis : construire l'image avant de démarrer
+#   Option 1 (Jib) : mvn compile jib:dockerBuild
+#   Option 2 (Docker) : docker build -f Dockerfile.prod -t mixxexpresso:latest .
+#
+# Usage : docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+# ============================================================
+name: mixx-expresso-prod
+
+include:
+  - path: ./compose/database.yml
+  - path: ./compose/cache.yml
+  - path: ./compose/elk.yml
+  - path: ./compose/tracing.yml
+  - path: ./compose/monitoring.yml
+  - path: ./compose/app.yml
+
+# ==================== VOLUMES ====================
+volumes:
+  elasticsearch-data:
+    driver: local
+  mssql-data:
+    driver: local
+  mssql-log:
+    driver: local
+  mssql-backup:
+    driver: local
+  redis_volume:
+    driver: local
+  grafana-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  alertmanager-data:
+    driver: local
+  app-tmp:
+    driver: local
+
+# ==================== NETWORKS ====================
+networks:
+  frontend-network:
+    driver: bridge
+    internal: false
+  backend-network:
+    driver: bridge
+    internal: true
+  elk-network:
+    driver: bridge
+    internal: true
+  monitoring-network:
+    driver: bridge
+    internal: true

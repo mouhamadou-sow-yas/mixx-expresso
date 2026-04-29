@@ -1,0 +1,135 @@
+management:
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+spring:
+  devtools:
+    restart:
+      enabled: false
+    livereload:
+      enabled: false
+  liquibase:
+    contexts: prod
+    url: jdbc:sqlserver://${R2DBC_HOST}:1433;database=${R2DBC_DB_NAME};encrypt=true;trustServerCertificate=false
+    user: ${R2DBC_USERNAME}
+    password: ${R2DBC_PASSWORD}
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${MAIL_SMTP_AUTH:false}
+      mail.smtp.starttls.enable: ${MAIL_SMTP_STARTTLS:false}
+  r2dbc:
+    url: r2dbc:mssql://${R2DBC_HOST}:1433/${R2DBC_DB_NAME}?ssl=true&trustServerCertificate=false&preferCursoredExecution=false
+    username: ${R2DBC_USERNAME}
+    password: ${R2DBC_PASSWORD}
+    pool:
+      initial-size: 10
+      max-size: 50
+      max-idle-time: 30m
+      max-acquire-time: 10s
+      max-create-connection-time: 5s
+      validation-query: SELECT 1
+  thymeleaf:
+    cache: true
+
+server:
+  port: 8080
+  shutdown: graceful
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,application/javascript,application/json,image/svg+xml
+    min-response-size: 1024
+
+# ===================================================================
+# TLS (optionnel — décommenter et adapter en production)
+# keytool -genkey -alias mixxexpresso -storetype PKCS12 -keyalg RSA -keysize 2048 -keystore keystore.p12 -validity 3650
+# ===================================================================
+#  ssl:
+#    key-store: classpath:config/tls/keystore.p12
+#    key-store-password: ${SSL_KEY_STORE_PASSWORD}
+#    key-store-type: PKCS12
+#    key-alias: mixxexpresso
+
+jhipster:
+  http:
+    cache:
+      timeToLiveInDays: 1461
+  security:
+    authentication:
+      jwt:
+        # PRODUCTION: changer cette clé et la stocker dans une variable d'env JHIPSTER_SECURITY_AUTHENTICATION_JWT_BASE64_SECRET
+        # Générer: openssl rand -base64 64
+        base64-secret: ${JHIPSTER_SECURITY_AUTHENTICATION_JWT_BASE64_SECRET}
+        token-validity-in-seconds: 86400
+        token-validity-in-seconds-for-remember-me: 2592000
+  mail:
+    base-url: ${APP_BASE_URL:http://localhost:8080}
+  logging:
+    use-json-format: true
+
+expresso:
+  url_ers: ${EXPRESSO_URL_ERS}
+  wsdl: ${EXPRESSO_WSDL_URL}
+  initiator_principal_id: ${EXPRESSO_INITIATOR_PRINCIPAL_ID}
+  initiator_password: ${EXPRESSO_INITIATOR_PASSWORD}
+  client_id: ${EXPRESSO_CLIENT_ID:Transfert2Com}
+  timeout_ms: ${EXPRESSO_TIMEOUT_MS:15000}
+
+mobiquity:
+  url_base: ${URL_MOBIQUITY_BASE}
+  url_cancel_tx: ${URL_CANCEL_TX}
+  timeout: ${MOBIQUITY_TIMEOUT}
+  status_check_timeout_seconds: ${MOBIQUITY_STATUS_CHECK_TIMEOUT:10}
+
+elasticsearch:
+  host: ${ELASTIC_HOST}
+  port: ${ELASTIC_PORT}
+  username: ${ELASTIC_USERNAME}
+  password: ${ELASTIC_PASSWORD}
+
+redis:
+  host: ${REDIS_HOST}
+  port: ${REDIS_PORT}
+  database: 0
+  timeout: 5000
+
+sms:
+  server_ip: ${SMS_SERVER_IP}
+  sender: ${SMS_SENDER}
+  timeout: ${SMS_TIMEOUT}
+  retry: ${RETRY_ATTEMPTS}
+
+mpin:
+  encryption:
+    secret: ${MPIN_ENCRYPTION_SECRET}
+
+dashboard:
+  cache:
+    refresh-delay-ms: ${DASHBOARD_CACHE_REFRESH_MS:300000}
+
+mail-conf:
+  from:
+    email: ${MAIL_FROM}
+    display-name: ${MAIL_FROM_DISPLAY_NAME:MIXX BY YAS}
+
+application:
+  sms:
+    api-url: ${SMS_API_URL}
+    sender: ${SMS_SENDER:Mixx by Yas}
+
+logging:
+  pattern:
+    level: '%5p [${spring.application.name:},%X{trace.id:-},%X{transaction.id:-}]'
+  level:
+    root: INFO
+    sn.mixx.expresso: INFO
+
+log:
+  path: ${LOG_PATH:/app/logs}
+  file:
+    name: ${LOG_FILE_NAME:application.log}

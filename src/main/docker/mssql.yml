@@ -1,0 +1,11 @@
+# Config MSSQL de base (étendu par docker-compose.yml et compose/database.yml)
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:latest
+    container_name: mssql
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${SA_PASSWORD:-yourStrong(!)Password}
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"

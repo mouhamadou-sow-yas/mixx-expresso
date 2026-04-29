@@ -1,0 +1,432 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <!-- ============================================================ -->
+    <!-- Table: jhi_authority                                          -->
+    <!-- ============================================================ -->
+    <changeSet id="00000-01" author="mixx-expresso">
+        <createTable tableName="jhi_authority">
+            <column name="name" type="varchar(50)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+        </createTable>
+        <insert tableName="jhi_authority"><column name="name" value="ROLE_ADMIN"/></insert>
+        <insert tableName="jhi_authority"><column name="name" value="ROLE_USER"/></insert>
+        <insert tableName="jhi_authority"><column name="name" value="ROLE_ANONYMOUS"/></insert>
+        <insert tableName="jhi_authority"><column name="name" value="ROLE_OPERATOR_BO"/></insert>
+        <insert tableName="jhi_authority"><column name="name" value="ROLE_FINANCE"/></insert>
+        <insert tableName="jhi_authority"><column name="name" value="ROLE_SUPERVISOR"/></insert>
+    </changeSet>
+
+    <!-- ============================================================ -->
+    <!-- Table: jhi_user                                               -->
+    <!-- ============================================================ -->
+    <changeSet id="00000-02" author="mixx-expresso">
+        <createTable tableName="jhi_user">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="login" type="varchar(50)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="password_hash" type="varchar(60)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="first_name" type="varchar(50)"/>
+            <column name="last_name" type="varchar(50)"/>
+            <column name="email" type="varchar(254)">
+                <constraints unique="true"/>
+            </column>
+            <column name="activated" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="lang_key" type="varchar(10)"/>
+            <column name="image_url" type="varchar(256)"/>
+            <column name="activation_key" type="varchar(20)"/>
+            <column name="reset_key" type="varchar(20)"/>
+            <column name="reset_date" type="datetime"/>
+            <column name="mfa_enabled" type="boolean" defaultValueBoolean="false"/>
+            <column name="phone_number" type="varchar(20)"/>
+            <column name="failed_login_attempts" type="int" defaultValueNumeric="0"/>
+            <column name="account_locked_until" type="datetime"/>
+            <column name="last_login_at" type="datetime"/>
+            <column name="created_by" type="varchar(50)"/>
+            <column name="created_date" type="datetime"/>
+            <column name="last_modified_by" type="varchar(50)"/>
+            <column name="last_modified_date" type="datetime"/>
+        </createTable>
+        <insert tableName="jhi_user">
+            <column name="login" value="admin"/>
+            <column name="password_hash" value="$2a$10$gSAhZrxMllrbgj/kkK9UceBPpChGWJA7SYIb1Mqo.n5aNLq1/oRrC"/>
+            <column name="first_name" value="Admin"/>
+            <column name="last_name" value="Mixx"/>
+            <column name="email" value="admin@mixx.sn"/>
+            <column name="activated" valueBoolean="true"/>
+            <column name="lang_key" value="fr"/>
+            <column name="created_by" value="system"/>
+            <column name="created_date" valueDate="now()"/>
+            <column name="last_modified_by" value="system"/>
+            <column name="last_modified_date" valueDate="now()"/>
+        </insert>
+    </changeSet>
+
+    <!-- ============================================================ -->
+    <!-- Table: jhi_user_authority                                     -->
+    <!-- ============================================================ -->
+    <changeSet id="00000-03" author="mixx-expresso">
+        <createTable tableName="jhi_user_authority">
+            <column name="user_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="authority_name" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="jhi_user_authority" columnNames="user_id, authority_name"/>
+        <addForeignKeyConstraint baseTableName="jhi_user_authority" baseColumnNames="user_id"
+            referencedTableName="jhi_user" referencedColumnNames="id"
+            constraintName="fk_user_authority_user"/>
+        <addForeignKeyConstraint baseTableName="jhi_user_authority" baseColumnNames="authority_name"
+            referencedTableName="jhi_authority" referencedColumnNames="name"
+            constraintName="fk_user_authority_authority"/>
+        <insert tableName="jhi_user_authority">
+            <column name="user_id" valueComputed="(SELECT id FROM jhi_user WHERE login = 'admin')"/>
+            <column name="authority_name" value="ROLE_ADMIN"/>
+        </insert>
+    </changeSet>
+
+    <!-- ============================================================ -->
+    <!-- Table: partner                                                 -->
+    <!-- ============================================================ -->
+    <changeSet id="00000-04" author="mixx-expresso">
+        <createTable tableName="partner">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="code_partner" type="varchar(50)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="name_partner" type="varchar(100)"/>
+            <column name="api_key" type="varchar(100)"/>
+            <column name="api_secret" type="varchar(255)"/>
+            <column name="email_admin" type="varchar(254)"/>
+            <column name="name_admin" type="varchar(100)"/>
+            <column name="actif" type="boolean" defaultValueBoolean="true"/>
+            <column name="created_at" type="datetime"/>
+            <column name="updated_at" type="datetime"/>
+        </createTable>
+    </changeSet>
+
+    <!-- ============================================================ -->
+    <!-- Table: transactions                                            -->
+    <!-- ============================================================ -->
+    <changeSet id="00000-05" author="mixx-expresso">
+        <createTable tableName="transactions">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="txn_id" type="varchar(36)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="client_reference" type="varchar(32)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="type" type="varchar(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="channel" type="varchar(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="client_msisdn" type="varchar(15)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="beneficiary_msisdn" type="varchar(15)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="amount" type="decimal(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fees" type="decimal(12,2)" defaultValueNumeric="0"/>
+            <column name="currency" type="varchar(3)" defaultValue="XOF"/>
+            <column name="product_id" type="varchar(50)"/>
+            <column name="product_category" type="varchar(20)"/>
+            <column name="ers_reference" type="varchar(50)"/>
+            <column name="ers_result_code" type="int"/>
+            <column name="ers_result_description" type="nvarchar(500)"/>
+            <column name="mobiquity_debit_ref" type="varchar(50)"/>
+            <column name="mobiquity_refund_ref" type="varchar(50)"/>
+            <column name="debit_confirmed" type="boolean" defaultValueBoolean="false"/>
+            <column name="refund_confirmed" type="boolean" defaultValueBoolean="false"/>
+            <column name="retry_count" type="int" defaultValueNumeric="0"/>
+            <column name="next_retry_at" type="datetime"/>
+            <column name="failure_reason" type="varchar(255)"/>
+            <column name="correlation_id" type="varchar(36)"/>
+            <column name="created_at" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="datetime"/>
+            <column name="completed_at" type="datetime"/>
+            <column name="expired_at" type="datetime"/>
+        </createTable>
+        <!-- Index pour le scheduler retry -->
+        <createIndex tableName="transactions" indexName="idx_transactions_status_retry">
+            <column name="status"/>
+            <column name="next_retry_at"/>
+        </createIndex>
+        <createIndex tableName="transactions" indexName="idx_transactions_client_msisdn">
+            <column name="client_msisdn"/>
+            <column name="created_at"/>
+        </createIndex>
+        <createIndex tableName="transactions" indexName="idx_transactions_correlation">
+            <column name="correlation_id"/>
+        </createIndex>
+        <createIndex tableName="transactions" indexName="idx_transactions_beneficiary">
+            <column name="beneficiary_msisdn"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ============================================================ -->
+    <!-- Table: transaction_status_history                             -->
+    <!-- ============================================================ -->
+    <changeSet id="00000-06" author="mixx-expresso">
+        <createTable tableName="transaction_status_history">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="transaction_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="old_status" type="varchar(20)"/>
+            <column name="new_status" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reason" type="varchar(255)"/>
+            <column name="metadata" type="nvarchar(2000)"/>
+            <column name="created_at" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="transaction_status_history" baseColumnNames="transaction_id"
+            referencedTableName="transactions" referencedColumnNames="id"
+            constraintName="fk_status_history_transaction"/>
+    </changeSet>
+
+    <!-- ============================================================ -->
+    <!-- Table: bundle_products                                        -->
+    <!-- ============================================================ -->
+    <changeSet id="00000-07" author="mixx-expresso">
+        <createTable tableName="bundle_products">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="ers_product_id" type="varchar(50)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="category" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="varchar(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="nvarchar(1000)"/>
+            <column name="price" type="decimal(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="validity_days" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_active" type="boolean" defaultValueBoolean="true"/>
+            <column name="auto_renew_available" type="boolean" defaultValueBoolean="false"/>
+            <column name="display_order" type="int" defaultValueNumeric="0"/>
+            <column name="created_at" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="datetime"/>
+        </createTable>
+    </changeSet>
+
+    <!-- ============================================================ -->
+    <!-- Table: clients                                                 -->
+    <!-- ============================================================ -->
+    <changeSet id="00000-08" author="mixx-expresso">
+        <createTable tableName="clients">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="msisdn" type="varchar(15)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="full_name" type="varchar(100)"/>
+            <column name="account_status" type="varchar(20)" defaultValue="ACTIVE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="daily_limit" type="decimal(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="monthly_limit" type="decimal(12,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="kyc_level" type="varchar(20)"/>
+            <column name="last_transaction_at" type="datetime"/>
+            <column name="created_at" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="datetime"/>
+        </createTable>
+    </changeSet>
+
+    <!-- ============================================================ -->
+    <!-- Table: configuration                                          -->
+    <!-- ============================================================ -->
+    <changeSet id="00000-09" author="mixx-expresso">
+        <createTable tableName="configuration">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="config_key" type="varchar(100)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="config_value" type="varchar(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="value_type" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="nvarchar(1000)"/>
+            <column name="updated_at" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_by" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- ============================================================ -->
+    <!-- Table: audit_logs                                             -->
+    <!-- ============================================================ -->
+    <changeSet id="00000-10" author="mixx-expresso">
+        <createTable tableName="audit_logs">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="action" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entity_type" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entity_id" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="actor" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="request_payload" type="nvarchar(max)"/>
+            <column name="response_payload" type="nvarchar(max)"/>
+            <column name="result" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="correlation_id" type="varchar(36)"/>
+            <column name="ip_address" type="varchar(45)"/>
+            <column name="user_agent" type="varchar(255)"/>
+            <column name="created_at" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex tableName="audit_logs" indexName="idx_audit_entity">
+            <column name="entity_type"/>
+            <column name="entity_id"/>
+            <column name="created_at"/>
+        </createIndex>
+        <createIndex tableName="audit_logs" indexName="idx_audit_correlation">
+            <column name="correlation_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- ============================================================ -->
+    <!-- Table: notifications                                          -->
+    <!-- ============================================================ -->
+    <changeSet id="00000-11" author="mixx-expresso">
+        <createTable tableName="notifications">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="transaction_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="varchar(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="recipient_msisdn" type="varchar(15)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="template_code" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="message" type="nvarchar(1000)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(20)" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
+            <column name="provider_reference" type="varchar(50)"/>
+            <column name="error_message" type="varchar(255)"/>
+            <column name="attempts" type="int" defaultValueNumeric="0"/>
+            <column name="sent_at" type="datetime"/>
+            <column name="created_at" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="notifications" baseColumnNames="transaction_id"
+            referencedTableName="transactions" referencedColumnNames="id"
+            constraintName="fk_notifications_transaction"/>
+    </changeSet>
+
+    <!-- ============================================================ -->
+    <!-- Table: expresso_call_logs                                     -->
+    <!-- ============================================================ -->
+    <changeSet id="00000-12" author="mixx-expresso">
+        <createTable tableName="expresso_call_logs">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="transaction_id" type="bigint"/>
+            <column name="correlation_id" type="varchar(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="operation" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="direction" type="varchar(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="http_status" type="int"/>
+            <column name="ers_result_code" type="int"/>
+            <column name="duration_ms" type="int"/>
+            <column name="attempt_number" type="int" defaultValueNumeric="1"/>
+            <column name="es_document_id" type="varchar(64)"/>
+            <column name="created_at" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex tableName="expresso_call_logs" indexName="idx_expresso_calls_txn">
+            <column name="transaction_id"/>
+            <column name="created_at"/>
+        </createIndex>
+        <createIndex tableName="expresso_call_logs" indexName="idx_expresso_calls_correlation">
+            <column name="correlation_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,245 @@
+---
+spring:
+  elasticsearch:
+    url: ${SPRING_ELASTICSEARCH_URIS}
+  config:
+    activate:
+      on-profile: '!api-docs'
+springdoc:
+  api-docs:
+    enabled: false
+---
+management:
+  endpoints:
+    web:
+      base-path: /management
+      exposure:
+        include:
+          - configprops
+          - env
+          - health
+          - info
+          - logfile
+          - loggers
+          - prometheus
+          - threaddump
+          - liquibase
+          - metrics
+          - redis
+  endpoint:
+    health:
+      show-details: when_authorized
+      roles: 'ROLE_ADMIN'
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState
+  info:
+    git:
+      mode: full
+    env:
+      enabled: true
+  health:
+    mail:
+      enabled: false
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+        step: 60
+  observations:
+    key-values:
+      application: ${spring.application.name}
+  metrics:
+    enable:
+      http: true
+      jvm: true
+      logback: true
+      process: true
+      system: true
+    distribution:
+      percentiles-histogram:
+        all: true
+      percentiles:
+        all: 0, 0.5, 0.75, 0.95, 0.99, 1.0
+    data:
+      repository:
+        autotime:
+          enabled: true
+    tags:
+      application: ${spring.application.name}
+  otlp:
+    tracing:
+      endpoint: ${OTLP_TRACING_ENDPOINT:http://localhost:4319/v1/traces}
+  tracing:
+    sampling:
+      probability: 1.0
+
+spring:
+  liquibase:
+    change-log: classpath:config/liquibase/master.xml
+
+  r2dbc:
+    url: r2dbc:mssql://${R2DBC_HOST}:${R2DBC_PORT:1433}/${R2DBC_DB_NAME}?ssl=false&trustServerCertificate=true&preferCursoredExecution=false
+    username: ${R2DBC_USERNAME}
+    password: ${R2DBC_PASSWORD}
+    pool:
+      initial-size: 5
+      max-size: 20
+      max-idle-time: 30m
+      max-acquire-time: 10s
+      max-create-connection-time: 5s
+      validation-query: SELECT 1
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+  application:
+    name: mixxExpresso
+  docker:
+    compose:
+      enabled: false
+  profiles:
+    active: '@spring.profiles.active@'
+    group:
+      dev:
+        - dev
+        - api-docs
+  jmx:
+    enabled: false
+  messages:
+    basename: i18n/messages
+  main:
+    allow-bean-definition-overriding: true
+  webflux:
+    problemdetails:
+      enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          authority-prefix: ''
+          authorities-claim-name: auth
+  task:
+    execution:
+      thread-name-prefix: mixx-expresso-task-
+      pool:
+        core-size: 2
+        max-size: 50
+        queue-capacity: 10000
+    scheduling:
+      thread-name-prefix: mixx-expresso-scheduling-
+      pool:
+        size: 2
+  thymeleaf:
+    mode: HTML
+  output:
+    ansi:
+      console-available: true
+
+server:
+  servlet:
+    session:
+      cookie:
+        http-only: true
+
+springdoc:
+  show-actuator: true
+
+info:
+  display-ribbon-on-profiles: 'dev'
+
+jhipster:
+  clientApp:
+    name: 'mixxExpressoApp'
+  mail:
+    from: ${MAIL_FROM}
+    base-url: http://${MAIL_HOST}:${MAIL_PORT}
+  api-docs:
+    default-include-pattern: /api/**
+    management-include-pattern: /management/**
+    title: Mixx Expresso API
+    description: Service d'achat d'airtime et de bundles Expresso
+    version: 0.0.1-SNAPSHOT
+    license: unlicensed
+  security:
+    content-security-policy: "default-src 'self'; frame-src 'self' data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://storage.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' data: https://fonts.gstatic.com"
+
+---
+expresso:
+  url_ers: ${EXPRESSO_URL_ERS}
+  wsdl: ${EXPRESSO_WSDL_URL}
+  initiator_principal_id: ${EXPRESSO_INITIATOR_PRINCIPAL_ID}
+  initiator_password: ${EXPRESSO_INITIATOR_PASSWORD}
+  client_id: ${EXPRESSO_CLIENT_ID:Transfert2Com}
+  timeout_ms: ${EXPRESSO_TIMEOUT_MS:15000}
+
+mobiquity:
+  url_base: ${URL_MOBIQUITY_BASE}
+  url_cancel_tx: ${URL_CANCEL_TX}
+  timeout: ${MOBIQUITY_TIMEOUT}
+  status_check_timeout_seconds: ${MOBIQUITY_STATUS_CHECK_TIMEOUT:10}
+  pending_cutoff_minutes: ${MOBIQUITY_PENDING_CUTOFF_MINUTES:2}
+  pending_check_delay_ms: ${MOBIQUITY_PENDING_CHECK_DELAY_MS:60000}
+
+sms:
+  server_ip: ${SMS_SERVER_IP}
+  sender: ${SMS_SENDER}
+  timeout: ${SMS_TIMEOUT}
+  retry: ${RETRY_ATTEMPTS}
+
+elasticsearch:
+  host: ${ELASTIC_HOST}
+  port: ${ELASTIC_PORT}
+  username: ${ELASTIC_USERNAME}
+  password: ${ELASTIC_PASSWORD}
+  default:
+    retry:
+      count: ${ELASTIC_DEFAULT_RETRY_COUNT:5}
+
+redis:
+  host: ${REDIS_HOST}
+  port: ${REDIS_PORT}
+  database: 0
+  timeout: 5000
+  lettuce:
+    pool:
+      max-active: 8
+      max-idle: 8
+      min-idle: 0
+      max-wait: -1ms
+    shutdown-timeout: 100ms
+
+mpin:
+  encryption:
+    secret: ${MPIN_ENCRYPTION_SECRET}
+
+dashboard:
+  cache:
+    refresh-delay-ms: ${DASHBOARD_CACHE_REFRESH_MS:300000}
+
+mail-conf:
+  from:
+    email: ${MAIL_FROM}
+    display-name: ${MAIL_FROM_DISPLAY_NAME:MIXX BY YAS}
+
+application:
+  sms:
+    api-url: ${SMS_API_URL}
+    sender: ${SMS_SENDER:MIXX-EXPRESSO}
+
+logging:
+  pattern:
+    level: '%5p [${spring.application.name:},%X{trace.id:-},%X{transaction.id:-}]'
+  level:
+    root: INFO
+    sn.mixx.expresso: DEBUG
+    org.springframework.web: DEBUG
+
+log:
+  path: ${LOG_PATH:./logs}
+  file:
+    name: ${LOG_FILE_NAME:mixx-expresso.log}

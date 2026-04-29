@@ -1,0 +1,34 @@
+# ============================================================
+# mixx-expresso — Base de données MSSQL (Production)
+# ============================================================
+services:
+  mssql:
+    extends:
+      file: src/main/docker/mssql.yml
+      service: mssql
+    environment:
+      - SA_PASSWORD=${SA_PASSWORD}
+      - MSSQL_PID=Standard
+    volumes:
+      - mssql-data:/var/opt/mssql/data
+      - mssql-log:/var/opt/mssql/log
+      - mssql-backup:/var/opt/mssql/backup
+    networks:
+      - backend-network
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P $${SA_PASSWORD} -Q 'SELECT 1' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 45s
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+          cpus: "2.0"
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"

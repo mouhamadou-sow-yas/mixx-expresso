@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+
+    <!-- Valeurs par défaut du BRD -->
+    <changeSet id="00002-01" author="mixx-expresso">
+        <insert tableName="configuration">
+            <column name="config_key" value="RETRY_MAX_COUNT"/>
+            <column name="config_value" value="5"/>
+            <column name="value_type" value="INT"/>
+            <column name="description" value="Nombre maximum de tentatives de retry"/>
+            <column name="updated_at" valueDate="now()"/>
+            <column name="updated_by" value="system"/>
+        </insert>
+        <insert tableName="configuration">
+            <column name="config_key" value="RETRY_BACKOFF_MS"/>
+            <column name="config_value" value="30000"/>
+            <column name="value_type" value="INT"/>
+            <column name="description" value="Délai initial du backoff exponentiel (ms)"/>
+            <column name="updated_at" valueDate="now()"/>
+            <column name="updated_by" value="system"/>
+        </insert>
+        <insert tableName="configuration">
+            <column name="config_key" value="TRANSACTION_TIMEOUT_MS"/>
+            <column name="config_value" value="7200000"/>
+            <column name="value_type" value="INT"/>
+            <column name="description" value="Durée max d'une transaction PENDING (2h en ms)"/>
+            <column name="updated_at" valueDate="now()"/>
+            <column name="updated_by" value="system"/>
+        </insert>
+        <insert tableName="configuration">
+            <column name="config_key" value="DAILY_LIMIT_DEFAULT"/>
+            <column name="config_value" value="500000"/>
+            <column name="value_type" value="INT"/>
+            <column name="description" value="Plafond journalier par défaut (FCFA)"/>
+            <column name="updated_at" valueDate="now()"/>
+            <column name="updated_by" value="system"/>
+        </insert>
+        <insert tableName="configuration">
+            <column name="config_key" value="MONTHLY_LIMIT_DEFAULT"/>
+            <column name="config_value" value="5000000"/>
+            <column name="value_type" value="INT"/>
+            <column name="description" value="Plafond mensuel par défaut (FCFA)"/>
+            <column name="updated_at" valueDate="now()"/>
+            <column name="updated_by" value="system"/>
+        </insert>
+        <insert tableName="configuration">
+            <column name="config_key" value="AIRTIME_MIN_AMOUNT"/>
+            <column name="config_value" value="100"/>
+            <column name="value_type" value="INT"/>
+            <column name="description" value="Montant minimum d'achat airtime (FCFA)"/>
+            <column name="updated_at" valueDate="now()"/>
+            <column name="updated_by" value="system"/>
+        </insert>
+        <insert tableName="configuration">
+            <column name="config_key" value="AIRTIME_MAX_AMOUNT"/>
+            <column name="config_value" value="100000"/>
+            <column name="value_type" value="INT"/>
+            <column name="description" value="Montant maximum d'achat airtime (FCFA)"/>
+            <column name="updated_at" valueDate="now()"/>
+            <column name="updated_by" value="system"/>
+        </insert>
+        <insert tableName="configuration">
+            <column name="config_key" value="ANTI_DUPLICATE_WINDOW_S"/>
+            <column name="config_value" value="300"/>
+            <column name="value_type" value="INT"/>
+            <column name="description" value="Fenêtre anti-doublon (5 min en secondes)"/>
+            <column name="updated_at" valueDate="now()"/>
+            <column name="updated_by" value="system"/>
+        </insert>
+        <insert tableName="configuration">
+            <column name="config_key" value="ERS_TIMEOUT_MS"/>
+            <column name="config_value" value="15000"/>
+            <column name="value_type" value="INT"/>
+            <column name="description" value="Timeout de l'appel SOAP Expresso ERS (ms)"/>
+            <column name="updated_at" valueDate="now()"/>
+            <column name="updated_by" value="system"/>
+        </insert>
+        <insert tableName="configuration">
+            <column name="config_key" value="DEALER_BALANCE_ALERT_THRESHOLD"/>
+            <column name="config_value" value="1000000"/>
+            <column name="value_type" value="INT"/>
+            <column name="description" value="Seuil d'alerte sur solde dealer Expresso (FCFA)"/>
+            <column name="updated_at" valueDate="now()"/>
+            <column name="updated_by" value="system"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

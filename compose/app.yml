@@ -1,0 +1,71 @@
+# ============================================================
+# mixx-expresso — Application Spring Boot (Production)
+# Image construite via Jib : mvn compile jib:dockerBuild
+# ============================================================
+services:
+  app:
+    image: mixxexpresso:${APP_VERSION:-latest}
+    container_name: mixx-expresso-app
+    env_file:
+      - .env.prod
+    environment:
+      - _JAVA_OPTIONS=-Xmx1g -Xms512m -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+      - SPRING_PROFILES_ACTIVE=prod
+      - MANAGEMENT_PROMETHEUS_METRICS_EXPORT_ENABLED=true
+      - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,prometheus,metrics
+      - MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS=never
+      - SPRING_R2DBC_URL=r2dbc:mssql://mssql:1433/${R2DBC_DB_NAME}?ssl=true&trustServerCertificate=false&preferCursoredExecution=false
+      - SPRING_LIQUIBASE_URL=jdbc:sqlserver://mssql:1433;database=${R2DBC_DB_NAME};encrypt=true;trustServerCertificate=false
+      - SPRING_R2DBC_USERNAME=${R2DBC_USERNAME}
+      - SPRING_R2DBC_PASSWORD=${R2DBC_PASSWORD}
+      - LOG_PATH=/app/logs
+      - LOG_FILE_NAME=mixx-expresso.log
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
+      - ELASTIC_HOST=elasticsearch
+      - ELASTIC_PORT=9200
+      - ELASTIC_USERNAME=${ELASTIC_USERNAME}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - REDIS_HOST=redis-server
+      - REDIS_PORT=6379
+      - MANAGEMENT_OTLP_TRACING_ENDPOINT=http://jaeger:4318/v1/traces
+      - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=0.1
+    expose:
+      - "8080"
+    volumes:
+      - ./logs:/app/logs
+      - app-tmp:/tmp
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/management/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 90s
+    depends_on:
+      mssql:
+        condition: service_healthy
+      redis-server:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      jaeger:
+        condition: service_healthy
+    networks:
+      - frontend-network
+      - backend-network
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+          cpus: "2.0"
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+        labels: "service"
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true

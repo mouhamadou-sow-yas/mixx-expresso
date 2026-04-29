@@ -1,0 +1,27 @@
+# Filebeat — Configuration locale (dev)
+filebeat.inputs:
+  - type: log
+    enabled: true
+    paths:
+      - /app/logs/*.log
+    json.keys_under_root: true
+    json.add_error_key: true
+    json.message_key: MessageTemplate
+    fields:
+      environment: dev
+      service: mixx-expresso
+    fields_under_root: true
+    multiline.type: pattern
+    multiline.pattern: '^{'
+    multiline.negate: true
+    multiline.match: after
+
+output.elasticsearch:
+  hosts: ["${ELASTICSEARCH_HOSTS:elasticsearch:9200}"]
+  index: "mixx-expresso-logs-%{+yyyy.MM.dd}"
+
+setup.ilm.enabled: false
+setup.template.name: "mixx-expresso"
+setup.template.pattern: "mixx-expresso-*"
+
+logging.level: warning

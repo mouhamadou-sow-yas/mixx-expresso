@@ -1,0 +1,37 @@
+# ============================================================
+# mixx-expresso — Dockerfile Production (alternative à Jib)
+# Build : docker build -f Dockerfile.prod -t mixxexpresso:latest .
+# ============================================================
+
+# ---- Étape 1 : Build Maven ----
+FROM eclipse-temurin:17-jdk-alpine AS builder
+WORKDIR /build
+COPY pom.xml .
+COPY src ./src
+
+# Télécharger les dépendances en cache séparé
+RUN --mount=type=cache,target=/root/.m2 \
+    ./mvnw -ntp -P prod,no-liquibase -DskipTests package
+
+# ---- Étape 2 : Image de runtime ----
+FROM eclipse-temurin:17-jre-focal
+LABEL maintainer="MFS Mixx <mixx@yas.sn>"
+
+RUN groupadd --gid 1000 spring && \
+    useradd --uid 1000 --gid spring --shell /bin/bash --create-home spring
+
+WORKDIR /app
+RUN mkdir -p /app/logs && chown spring:spring /app/logs
+
+# Copier le JAR depuis l'étape builder
+COPY --from=builder --chown=spring:spring /build/target/*.jar app.jar
+COPY --chown=spring:spring src/main/docker/jib/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+USER spring
+EXPOSE 8080
+
+HEALTHCHECK --interval=10s --timeout=5s --retries=20 --start-period=90s \
+  CMD curl -f http://localhost:8080/management/health || exit 1
+
+ENTRYPOINT ["/entrypoint.sh"]

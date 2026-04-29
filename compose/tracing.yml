@@ -1,0 +1,42 @@
+# ============================================================
+# mixx-expresso — Distributed Tracing (Jaeger) — Production
+# ============================================================
+services:
+  jaeger:
+    image: jaegertracing/all-in-one:1.56
+    container_name: jaeger-prod
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - SPAN_STORAGE_TYPE=elasticsearch
+      - ES_SERVER_URLS=http://elasticsearch:9200
+      - ES_USERNAME=elastic
+      - ES_PASSWORD=${ELASTIC_PASSWORD}
+      - LOG_LEVEL=warn
+    expose:
+      - "16686"
+      - "4317"
+      - "4318"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - elk-network
+      - backend-network
+      - frontend-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:16686 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "0.5"
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"

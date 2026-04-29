@@ -1,0 +1,32 @@
+# Filebeat — Configuration Production
+filebeat.inputs:
+  - type: log
+    enabled: true
+    paths:
+      - /app/logs/*.log
+    json.keys_under_root: true
+    json.add_error_key: true
+    json.message_key: MessageTemplate
+    fields:
+      environment: prod
+      service: mixx-expresso
+    fields_under_root: true
+    multiline.type: pattern
+    multiline.pattern: '^{'
+    multiline.negate: true
+    multiline.match: after
+
+output.elasticsearch:
+  hosts: ["${ELASTICSEARCH_HOSTS:elasticsearch:9200}"]
+  username: "${ELASTICSEARCH_USERNAME:elastic}"
+  password: "${ELASTICSEARCH_PASSWORD}"
+  index: "mixx-expresso-logs-%{+yyyy.MM.dd}"
+
+setup.ilm.enabled: true
+setup.ilm.rollover_alias: "mixx-expresso-logs"
+setup.ilm.pattern: "{now/d}-000001"
+
+setup.template.name: "mixx-expresso"
+setup.template.pattern: "mixx-expresso-*"
+
+logging.level: warning

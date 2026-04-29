@@ -1,0 +1,249 @@
+# ============================================================
+# mixx-expresso — Infrastructure locale (dev)
+# ⚠️  L'application Spring Boot tourne DIRECTEMENT (pas dans Docker)
+#      Lance l'app avec : mvn spring-boot:run  ou  depuis l'IDE
+#
+# Ports décalés pour coexister avec mixx-pay-impot :
+#   MSSQL    : 1434  (mixx-pay-impot utilise 1433)
+#   Redis    : 6380  (mixx-pay-impot utilise 6379)
+#   ES       : 9201  (mixx-pay-impot utilise 9200)
+#   Kibana   : 5602  (mixx-pay-impot utilise 5601)
+#   Jaeger   : 16687 / 4319 / 4320
+#   Prometheus: 9091
+#   Grafana  : 3001
+#   MailHog  : 1026 / 8026
+#
+# Usage : docker compose up -d
+# ============================================================
+name: mixx-expresso-dev
+services:
+
+  # ==================== BASE DE DONNÉES ====================
+  mssql:
+    extends:
+      file: src/main/docker/mssql.yml
+      service: mssql
+    container_name: mixx-expresso-mssql
+    ports:
+      - "1434:1433"
+    networks:
+      - mixx-expresso-network
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P $${SA_PASSWORD} -Q 'SELECT 1' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # ==================== CACHE ====================
+  redis-server:
+    container_name: mixx-expresso-redis
+    image: "redis/redis-stack:7.4.0-v3"
+    ports:
+      - "6380:6379"
+      - "8002:8001"   # Redis Insight UI
+    environment:
+      - REDIS_REPLICATION_MODE=master
+    volumes:
+      - redis_volume:/data
+    networks:
+      - mixx-expresso-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==================== ELASTICSEARCH ====================
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.16.1
+    container_name: mixx-expresso-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      # Réduit pour Apple Silicon / machines avec peu de RAM
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - cluster.name=mixx-expresso-cluster
+      - node.name=es-node-01
+      - bootstrap.memory_lock=true
+      # Single-node : désactiver les seuils disque et forcer replicas=0
+      # pour que les index système de Kibana passent YELLOW→GREEN
+      - cluster.routing.allocation.disk.threshold_enabled=false
+      - "indices.lifecycle.poll_interval=10s"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9201:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - mixx-expresso-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # Force replicas=0 sur tous les index (single-node → index passent GREEN)
+  es-init:
+    image: curlimages/curl:8.5.0
+    container_name: mixx-expresso-es-init
+    volumes:
+      - ./elasticsearch/init-single-node.sh:/init.sh:ro
+    entrypoint: ["/bin/sh", "/init.sh"]
+    environment:
+      - ES_URL=http://elasticsearch:9200
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - mixx-expresso-network
+    restart: "no"
+
+  # ==================== KIBANA ====================
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.16.1
+    container_name: mixx-expresso-kibana
+    ports:
+      - "5602:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_NAME=kibana
+      - SERVER_HOST=0.0.0.0
+      - XPACK_SECURITY_ENABLED=false
+      - TELEMETRY_ENABLED=false
+      # Accepte yellow pour les migrations (single-node sans replicas)
+      - "KIBANA_MIGRATIONS_THROW_ON_CONFLICT=false"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      es-init:
+        condition: service_completed_successfully
+    networks:
+      - mixx-expresso-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status | grep -q '\"level\":\"available\"' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # ==================== FILEBEAT ====================
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.16.1
+    container_name: mixx-expresso-filebeat
+    user: root
+    command: filebeat -e --strict.perms=false -c /usr/share/filebeat/filebeat.yml
+    volumes:
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./logs:/app/logs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - mixx-expresso-network
+    restart: on-failure
+
+  # ==================== JAEGER ====================
+  jaeger:
+    image: jaegertracing/all-in-one:1.56
+    container_name: mixx-expresso-jaeger
+    ports:
+      - "16687:16686"   # UI Jaeger
+      - "4320:4317"     # OTLP gRPC
+      - "4319:4318"     # OTLP HTTP
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - mixx-expresso-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:16686 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ==================== PROMETHEUS ====================
+  prometheus:
+    image: prom/prometheus:v3.3.1
+    container_name: mixx-expresso-prometheus
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9091:9090"
+    networks:
+      - mixx-expresso-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9090/-/healthy || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # ==================== GRAFANA ====================
+  grafana:
+    image: grafana/grafana:12.0.0
+    container_name: mixx-expresso-grafana
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_INSTALL_PLUGINS: grafana-piechart-panel
+      GF_SERVER_ROOT_URL: http://localhost:3001
+      GF_ALERTING_ENABLED: "true"
+    depends_on:
+      - prometheus
+      - elasticsearch
+    ports:
+      - "3001:3000"
+    networks:
+      - mixx-expresso-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # ==================== MAILHOG ====================
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mixx-expresso-mailhog
+    ports:
+      - "127.0.0.1:1026:1025"   # SMTP
+      - "127.0.0.1:8026:8025"   # UI Web
+    restart: unless-stopped
+    networks:
+      - mixx-expresso-network
+
+# ==================== VOLUMES ====================
+volumes:
+  elasticsearch-data:
+    driver: local
+  redis_volume:
+    driver: local
+  grafana-data:
+    driver: local
+  prometheus-data:
+    driver: local
+
+# ==================== NETWORKS ====================
+networks:
+  mixx-expresso-network:
+    driver: bridge

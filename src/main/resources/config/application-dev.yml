@@ -1,0 +1,123 @@
+spring:
+  devtools:
+    restart:
+      enabled: true
+      additional-exclude: static/**
+    livereload:
+      enabled: false
+  jackson:
+    serialization:
+      indent-output: true
+  liquibase:
+    contexts: dev, faker
+    url: jdbc:sqlserver://${R2DBC_HOST:localhost}:${R2DBC_PORT:1434};database=${R2DBC_DB_NAME};encrypt=false
+    user: ${R2DBC_USERNAME}
+    password: ${R2DBC_PASSWORD}
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1026}
+    username:
+    password:
+    properties:
+      mail.smtp.auth: false
+      mail.smtp.starttls.enable: false
+  messages:
+    cache-duration: PT1S
+  r2dbc:
+    url: r2dbc:mssql://${R2DBC_HOST:localhost}:${R2DBC_PORT:1434}/${R2DBC_DB_NAME}?ssl=false&trustServerCertificate=true&preferCursoredExecution=false
+    username: ${R2DBC_USERNAME}
+    password: ${R2DBC_PASSWORD}
+    pool:
+      initial-size: 5
+      max-size: 20
+      max-idle-time: 30m
+      max-acquire-time: 5s
+      max-create-connection-time: 5s
+      validation-query: SELECT 1
+  thymeleaf:
+    cache: false
+  application:
+    name: mixxExpresso
+
+server:
+  port: 8081
+  forward-headers-strategy: native
+
+jhipster:
+  cors:
+    allowed-origins: 'http://localhost:8100,https://localhost:8100,http://localhost:9000,https://localhost:9000,http://localhost:4200,https://localhost:4200'
+    allowed-origin-patterns: 'https://*.githubpreview.dev'
+    allowed-methods: '*'
+    allowed-headers: '*'
+    exposed-headers: 'Authorization,Link,X-Total-Count,X-${jhipster.clientApp.name}-alert,X-${jhipster.clientApp.name}-error,X-${jhipster.clientApp.name}-params'
+    allow-credentials: true
+    max-age: 1800
+  security:
+    authentication:
+      jwt:
+        base64-secret: M2VlMzkxZjg3MzBlMjA1OWI5MjVlZDZjOTNmMDJhYTMyNjI4MDg1MzdhNGJhNWMzMDBhODRlOWY4ZDU3NWQzYjA3ODNmYzQ2ZjYxODc4NDA0ZjRmZGU4ZmNiMDBjZTEzZGNiYWI4NzA2MjI1N2NiODAwYmI3MzkyNWVkOTJmNWI=
+        token-validity-in-seconds: 86400
+        token-validity-in-seconds-for-remember-me: 2592000
+  mail:
+    base-url: http://127.0.0.1:8080
+  logging:
+    use-json-format: false
+
+expresso:
+  url_ers: ${EXPRESSO_URL_ERS:http://10.71.47.17:8913/topupservice/service}
+  wsdl: ${EXPRESSO_WSDL_URL:http://10.71.47.17:8913/topupservice/service?wsdl}
+  initiator_principal_id: ${EXPRESSO_INITIATOR_PRINCIPAL_ID}
+  initiator_password: ${EXPRESSO_INITIATOR_PASSWORD}
+  client_id: ${EXPRESSO_CLIENT_ID:Transfert2Com}
+  timeout_ms: ${EXPRESSO_TIMEOUT_MS:15000}
+
+mobiquity:
+  url_base: ${URL_MOBIQUITY_BASE}
+  url_cancel_tx: ${URL_CANCEL_TX}
+  timeout: ${MOBIQUITY_TIMEOUT:30}
+
+elasticsearch:
+  host: ${ELASTIC_HOST:localhost}
+  port: ${ELASTIC_PORT:9201}
+  username: ${ELASTIC_USERNAME:}
+  password: ${ELASTIC_PASSWORD:}
+
+redis:
+  host: ${REDIS_HOST:localhost}
+  port: ${REDIS_PORT:6380}
+  database: 0
+  timeout: 5000
+  lettuce:
+    pool:
+      max-active: 8
+      max-idle: 8
+      min-idle: 0
+      max-wait: -1ms
+    shutdown-timeout: 100ms
+
+mpin:
+  encryption:
+    secret: ${MPIN_ENCRYPTION_SECRET:dGVzdEtleUZvckRldk1waW5FbmNyeXB0aW9uMzJiIQ==}
+
+application:
+  sms:
+    api-url: ${SMS_API_URL:https://192.168.41.45:9040}
+    sender: ${SMS_SENDER:MIXX-EXPRESSO}
+
+logging:
+  pattern:
+    level: '%5p [${spring.application.name:},%X{trace.id:-},%X{transaction.id:-}]'
+  level:
+    root: INFO
+    sn.mixx.expresso: DEBUG
+    org.springframework.web: DEBUG
+
+log:
+  path: ${LOG_PATH:./logs}
+  file:
+    name: ${LOG_FILE_NAME:mixx-expresso.log}
+
+mail-conf:
+  from:
+    email: ${MAIL_FROM}
+    display-name: ${MAIL_FROM_DISPLAY_NAME:MIXX BY YAS}

@@ -1,0 +1,57 @@
+# ============================================================
+# mixx-expresso — Cache Redis + Redis Exporter (Production)
+# ============================================================
+services:
+
+  redis-server:
+    container_name: redis-server-prod
+    image: "redis/redis-stack-server:7.4.0-v3"
+    command: >
+      redis-server
+        --requirepass ${REDIS_PASSWORD}
+        --appendonly yes
+        --appendfsync everysec
+        --maxmemory 512mb
+        --maxmemory-policy allkeys-lru
+        --loglevel warning
+    volumes:
+      - redis_volume:/data
+    networks:
+      - backend-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 768m
+          cpus: "0.5"
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.62.0
+    container_name: redis-exporter-prod
+    environment:
+      - REDIS_ADDR=redis://redis-server:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    expose:
+      - "9121"
+    depends_on:
+      redis-server:
+        condition: service_healthy
+    networks:
+      - backend-network
+      - monitoring-network
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+          cpus: "0.1"
+    restart: unless-stopped

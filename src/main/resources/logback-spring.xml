@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <springProperty scope="context" name="applicationName" source="spring.application.name"/>
+  <springProperty scope="context" name="logPath" source="log.path" defaultValue="logs"/>
+  <springProperty scope="context" name="logFileName" source="log.file.name" defaultValue="mixx-expresso.log"/>
+  <springProperty scope="context" name="environment" source="spring.profiles.active" defaultValue="default"/>
+  <springProperty scope="context" name="hostName" source="HOSTNAME" defaultValue="unknown"/>
+
+  <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+      <includeMdc>true</includeMdc>
+      <includeContext>true</includeContext>
+      <includeThrowable>true</includeThrowable>
+      <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+        <maxDepthPerCause>20</maxDepthPerCause>
+        <rootCauseFirst>true</rootCauseFirst>
+      </throwableConverter>
+      <fieldNames>
+        <timestamp>Timestamp</timestamp>
+        <level>Level</level>
+        <message>MessageTemplate</message>
+        <logger>SourceContext</logger>
+        <thread>ThreadName</thread>
+        <stackTrace>StackTrace</stackTrace>
+      </fieldNames>
+      <customFields>{"Application":"${applicationName}","Environment":"${environment}","HostName":"${hostName}"}</customFields>
+      <provider class="net.logstash.logback.composite.loggingevent.ArgumentsJsonProvider"/>
+      <provider class="net.logstash.logback.composite.loggingevent.KeyValuePairsJsonProvider"/>
+    </encoder>
+  </appender>
+
+  <appender name="JSON_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${logPath}/${logFileName}</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logPath}/archived/${logFileName}.%d{yyyy-MM-dd}.json.gz</fileNamePattern>
+      <maxHistory>30</maxHistory>
+      <totalSizeCap>10GB</totalSizeCap>
+    </rollingPolicy>
+    <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+      <includeMdc>true</includeMdc>
+      <includeContext>true</includeContext>
+      <includeThrowable>true</includeThrowable>
+      <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+        <maxDepthPerCause>20</maxDepthPerCause>
+        <rootCauseFirst>true</rootCauseFirst>
+      </throwableConverter>
+      <fieldNames>
+        <timestamp>Timestamp</timestamp>
+        <level>Level</level>
+        <message>MessageTemplate</message>
+        <logger>SourceContext</logger>
+        <thread>ThreadName</thread>
+        <stackTrace>StackTrace</stackTrace>
+      </fieldNames>
+      <customFields>{"Application":"${applicationName}","Environment":"${environment}","HostName":"${hostName}"}</customFields>
+      <provider class="net.logstash.logback.composite.loggingevent.ArgumentsJsonProvider"/>
+      <provider class="net.logstash.logback.composite.loggingevent.KeyValuePairsJsonProvider"/>
+    </encoder>
+  </appender>
+
+  <root level="INFO">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="JSON_FILE"/>
+  </root>
+
+  <logger name="sn.mixx.expresso" level="DEBUG" additivity="false">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="JSON_FILE"/>
+  </logger>
+
+  <logger name="org.springframework.web" level="DEBUG"/>
+  <logger name="io.r2dbc" level="DEBUG"/>
+  <logger name="org.springframework.data.r2dbc" level="DEBUG"/>
+  <logger name="org.apache.cxf" level="INFO"/>
+</configuration>

@@ -1,0 +1,44 @@
+# Maven
+target/
+*.jar
+*.war
+*.class
+
+# Fichiers sensibles — NE JAMAIS committer
+.env
+.env.prod
+.env.local
+*.env
+
+# Logs (garder le dossier, ignorer les fichiers)
+logs/*.log
+logs/archived/
+*.log
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes locaux
+mssql-data/
+redis-data/
+
+# Clés / certificats
+*.p12
+*.jks
+*.pem
+*.key
+keystore*
+truststore*
+
+# Grafana / Prometheus (données runtime)
+grafana/data/
+prometheus/data/
