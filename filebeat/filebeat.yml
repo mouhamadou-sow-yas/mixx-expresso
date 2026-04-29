@@ -9,7 +9,7 @@ filebeat.inputs:
     json.message_key: MessageTemplate
     fields:
       environment: dev
-      service: mixx-expresso
+      service: mixxexpresso
     fields_under_root: true
     multiline.type: pattern
     multiline.pattern: '^{'
@@ -18,10 +18,11 @@ filebeat.inputs:
 
 output.elasticsearch:
   hosts: ["${ELASTICSEARCH_HOSTS:elasticsearch:9200}"]
-  index: "mixx-expresso-logs-%{+yyyy.MM.dd}"
+  index: "mixxexpresso-logs-%{+yyyy.MM.dd}"
 
 setup.ilm.enabled: false
-setup.template.name: "mixx-expresso"
-setup.template.pattern: "mixx-expresso-*"
+setup.template.enabled: false
+setup.template.name: "mixxexpresso"
+setup.template.pattern: "mixxexpresso-logs-*"
 
 logging.level: warning
