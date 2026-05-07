@@ -14,6 +14,7 @@ import sn.mixx.expresso.repository.TransactionRepository;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 
 @Slf4j
@@ -67,7 +68,7 @@ public class AntiFraudService {
 
     public Mono<Void> checkMonthlyLimit(String msisdn, BigDecimal amount) {
         Instant startOfMonth = Instant.now().truncatedTo(ChronoUnit.DAYS)
-            .minus(Instant.now().atZone(java.time.ZoneOffset.UTC).getDayOfMonth() - 1, ChronoUnit.DAYS);
+            .minus(Instant.now().atZone(ZoneOffset.UTC).getDayOfMonth() - 1, ChronoUnit.DAYS);
 
         return clientRepository.findByMsisdn(msisdn)
             .flatMap(client -> transactionRepository.sumMonthlyAmountByMsisdn(msisdn, startOfMonth)

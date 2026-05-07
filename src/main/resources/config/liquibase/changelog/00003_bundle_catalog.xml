@@ -9,73 +9,78 @@
     <changeSet id="00003-01" author="mixx-expresso">
         <!-- BUUR — Forfaits voix -->
         <insert tableName="bundle_products">
-            <column name="ers_product_id" value="BUNDLE_1723"/>
-            <column name="category" value="BUUR"/>
-            <column name="name" value="Buur 1000F"/>
-            <column name="description" value="200 mn tous réseaux + 1 Go + 100 SMS - 7 jours"/>
-            <column name="price" valueNumeric="1000"/>
-            <column name="validity_days" valueNumeric="7"/>
-            <column name="is_active" valueBoolean="true"/>
+            <column name="id"                  valueNumeric="1"/>
+            <column name="ers_product_id"      value="BUNDLE_1723"/>
+            <column name="category"            value="BUUR"/>
+            <column name="name"                value="Buur 1000F"/>
+            <column name="description"         value="200 mn tous réseaux + 1 Go + 100 SMS - 7 jours"/>
+            <column name="price"               valueNumeric="1000"/>
+            <column name="validity_days"       valueNumeric="7"/>
+            <column name="is_active"           valueBoolean="true"/>
             <column name="auto_renew_available" valueBoolean="false"/>
-            <column name="display_order" valueNumeric="10"/>
-            <column name="created_at" valueDate="now()"/>
-            <column name="updated_at" valueDate="now()"/>
+            <column name="display_order"       valueNumeric="10"/>
+            <column name="created_at"          valueComputed="GETDATE()"/>
+            <column name="updated_at"          valueComputed="GETDATE()"/>
         </insert>
         <insert tableName="bundle_products">
-            <column name="ers_product_id" value="BUNDLE_145000"/>
-            <column name="category" value="BUUR"/>
-            <column name="name" value="Buur 5000F"/>
-            <column name="description" value="1 000 mn tous réseaux + 15 Go + 500 SMS - 30 jours"/>
-            <column name="price" valueNumeric="5000"/>
-            <column name="validity_days" valueNumeric="30"/>
-            <column name="is_active" valueBoolean="true"/>
+            <column name="id"                  valueNumeric="2"/>
+            <column name="ers_product_id"      value="BUNDLE_145000"/>
+            <column name="category"            value="BUUR"/>
+            <column name="name"                value="Buur 5000F"/>
+            <column name="description"         value="1 000 mn tous réseaux + 15 Go + 500 SMS - 30 jours"/>
+            <column name="price"               valueNumeric="5000"/>
+            <column name="validity_days"       valueNumeric="30"/>
+            <column name="is_active"           valueBoolean="true"/>
             <column name="auto_renew_available" valueBoolean="true"/>
-            <column name="display_order" valueNumeric="20"/>
-            <column name="created_at" valueDate="now()"/>
-            <column name="updated_at" valueDate="now()"/>
+            <column name="display_order"       valueNumeric="20"/>
+            <column name="created_at"          valueComputed="GETDATE()"/>
+            <column name="updated_at"          valueComputed="GETDATE()"/>
         </insert>
 
         <!-- NET — Forfaits data -->
         <insert tableName="bundle_products">
-            <column name="ers_product_id" value="BUNDLE_1721"/>
-            <column name="category" value="NET"/>
-            <column name="name" value="Net 500F"/>
-            <column name="description" value="2 Go - 24 heures"/>
-            <column name="price" valueNumeric="500"/>
-            <column name="validity_days" valueNumeric="1"/>
-            <column name="is_active" valueBoolean="true"/>
+            <column name="id"                  valueNumeric="3"/>
+            <column name="ers_product_id"      value="BUNDLE_1721"/>
+            <column name="category"            value="NET"/>
+            <column name="name"                value="Net 500F"/>
+            <column name="description"         value="2 Go - 24 heures"/>
+            <column name="price"               valueNumeric="500"/>
+            <column name="validity_days"       valueNumeric="1"/>
+            <column name="is_active"           valueBoolean="true"/>
             <column name="auto_renew_available" valueBoolean="false"/>
-            <column name="display_order" valueNumeric="10"/>
-            <column name="created_at" valueDate="now()"/>
-            <column name="updated_at" valueDate="now()"/>
+            <column name="display_order"       valueNumeric="10"/>
+            <column name="created_at"          valueComputed="GETDATE()"/>
+            <column name="updated_at"          valueComputed="GETDATE()"/>
         </insert>
 
         <!-- PROMOS -->
         <insert tableName="bundle_products">
-            <column name="ers_product_id" value="BUNDLE_62023"/>
-            <column name="category" value="PROMOS"/>
-            <column name="name" value="Promo 1000F"/>
-            <column name="description" value="50 000 F bonus - 7 jours"/>
-            <column name="price" valueNumeric="1000"/>
-            <column name="validity_days" valueNumeric="7"/>
-            <column name="is_active" valueBoolean="true"/>
+            <column name="id"                  valueNumeric="4"/>
+            <column name="ers_product_id"      value="BUNDLE_62023"/>
+            <column name="category"            value="PROMOS"/>
+            <column name="name"                value="Promo 1000F"/>
+            <column name="description"         value="50 000 F bonus - 7 jours"/>
+            <column name="price"               valueNumeric="1000"/>
+            <column name="validity_days"       valueNumeric="7"/>
+            <column name="is_active"           valueBoolean="true"/>
             <column name="auto_renew_available" valueBoolean="false"/>
-            <column name="display_order" valueNumeric="10"/>
-            <column name="created_at" valueDate="now()"/>
-            <column name="updated_at" valueDate="now()"/>
+            <column name="display_order"       valueNumeric="10"/>
+            <column name="created_at"          valueComputed="GETDATE()"/>
+            <column name="updated_at"          valueComputed="GETDATE()"/>
         </insert>
         <insert tableName="bundle_products">
-            <column name="ers_product_id" value="BUNDLE_142023"/>
-            <column name="category" value="PROMOS"/>
-            <column name="name" value="Promo 2000F"/>
-            <column name="description" value="100 000 F bonus - 1 mois"/>
-            <column name="price" valueNumeric="2000"/>
-            <column name="validity_days" valueNumeric="30"/>
-            <column name="is_active" valueBoolean="true"/>
+            <column name="id"                  valueNumeric="5"/>
+            <column name="ers_product_id"      value="BUNDLE_142023"/>
+            <column name="category"            value="PROMOS"/>
+            <column name="name"                value="Promo 2000F"/>
+            <column name="description"         value="100 000 F bonus - 1 mois"/>
+            <column name="price"               valueNumeric="2000"/>
+            <column name="validity_days"       valueNumeric="30"/>
+            <column name="is_active"           valueBoolean="true"/>
             <column name="auto_renew_available" valueBoolean="false"/>
-            <column name="display_order" valueNumeric="20"/>
-            <column name="created_at" valueDate="now()"/>
-            <column name="updated_at" valueDate="now()"/>
+            <column name="display_order"       valueNumeric="20"/>
+            <column name="created_at"          valueComputed="GETDATE()"/>
+            <column name="updated_at"          valueComputed="GETDATE()"/>
         </insert>
     </changeSet>
 

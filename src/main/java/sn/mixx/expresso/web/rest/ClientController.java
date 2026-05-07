@@ -9,7 +9,7 @@ import sn.mixx.expresso.service.dto.response.TransactionResponse;
 import sn.mixx.expresso.service.transaction.TransactionService;
 
 @RestController
-@RequestMapping("/api/clients")
+@RequestMapping("/v1/clients")
 @RequiredArgsConstructor
 public class ClientController {
 

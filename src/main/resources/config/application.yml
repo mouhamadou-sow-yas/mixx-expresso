@@ -176,6 +176,20 @@ expresso:
   initiator_password: ${EXPRESSO_INITIATOR_PASSWORD}
   client_id: ${EXPRESSO_CLIENT_ID:Transfert2Com}
   timeout_ms: ${EXPRESSO_TIMEOUT_MS:15000}
+  mock:
+    enabled: ${EXPRESSO_MOCK_ENABLED:false}
+    delay-ms: ${EXPRESSO_MOCK_DELAY_MS:200}
+    request-topup:
+      result-code: ${EXPRESSO_MOCK_TOPUP_RESULT_CODE:0}
+      result-description: ${EXPRESSO_MOCK_TOPUP_DESCRIPTION:Mock Success}
+      ers-transaction-id-prefix: ${EXPRESSO_MOCK_TOPUP_ERS_TXN_ID_PREFIX:ERS_MOCK_}
+    get-transaction-status:
+      result-code: ${EXPRESSO_MOCK_STATUS_RESULT_CODE:0}
+      status: ${EXPRESSO_MOCK_STATUS:COMPLETED}
+    request-principal-information:
+      result-code: ${EXPRESSO_MOCK_BALANCE_RESULT_CODE:0}
+      balance: ${EXPRESSO_MOCK_BALANCE:5000000}
+      currency: ${EXPRESSO_MOCK_CURRENCY:XOF}
 
 mobiquity:
   url_base: ${URL_MOBIQUITY_BASE}
@@ -229,7 +243,7 @@ mail-conf:
 application:
   sms:
     api-url: ${SMS_API_URL}
-    sender: ${SMS_SENDER:MIXX-EXPRESSO}
+    sender: ${SMS_SENDER:Mixx by Yas}
 
 logging:
   pattern:

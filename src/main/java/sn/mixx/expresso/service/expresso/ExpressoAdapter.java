@@ -4,18 +4,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import sn.mixx.expresso.domain.elastic.ExpressoCallDocument;
 import sn.mixx.expresso.exception.ExpressoBusinessFailureException;
 import sn.mixx.expresso.exception.ExpressoTimeoutException;
 import sn.mixx.expresso.exception.ExpressoUnavailableException;
+import sn.mixx.expresso.service.expresso.soap.*;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -35,6 +34,7 @@ import java.util.concurrent.TimeoutException;
 public class ExpressoAdapter {
 
     private final ExpressoCallLogService expressoCallLogService;
+    private final ErsTopupService ersTopupService;
 
     @Value("${expresso.url_ers}")
     private String ersUrl;
@@ -55,14 +55,6 @@ public class ExpressoAdapter {
      * Effectue la recharge airtime ou l'activation de bundle via requestTopup.
      * En cas de timeout ou d'absence de réponse, lève ExpressoTimeoutException
      * (la transaction doit passer en PENDING, pas de retry immédiat de requestTopup).
-     *
-     * @param txnId          UUID de la transaction Mixx (idempotency key côté ERS)
-     * @param clientReference clé d'idempotence propagée à Expresso
-     * @param beneficiaryMsisdn MSISDN Expresso à recharger
-     * @param amount          montant en FCFA
-     * @param productId       ID produit ERS (null pour airtime)
-     * @param correlationId   ID de corrélation pour le logging
-     * @return référence ERS (ersReference) si succès
      */
     public Mono<String> requestTopup(String txnId, String clientReference,
                                      String beneficiaryMsisdn, BigDecimal amount,
@@ -105,10 +97,6 @@ public class ExpressoAdapter {
     /**
      * Vérifie le statut d'une transaction Expresso via getTransactionStatus.
      * Utilisé EXCLUSIVEMENT par le retry scheduler — jamais pour rejouer requestTopup.
-     *
-     * @param clientReference clé d'idempotence originale de la transaction
-     * @param correlationId   ID de corrélation
-     * @return "SUCCESS", "FAILED", ou "PENDING"
      */
     public Mono<String> getTransactionStatus(String clientReference, String correlationId) {
         log.debug("[ERS] getTransactionStatus: clientRef={}", clientReference);
@@ -145,7 +133,7 @@ public class ExpressoAdapter {
 
         return Mono.fromCallable(this::callRequestPrincipalInformation)
             .subscribeOn(Schedulers.boundedElastic())
-            .timeout(java.time.Duration.ofMillis(timeoutMs))
+            .timeout(Duration.ofMillis(timeoutMs))
             .map(balance -> {
                 log.info("[ERS] Solde dealer: {}", balance);
                 return balance;
@@ -156,44 +144,67 @@ public class ExpressoAdapter {
             });
     }
 
-    // ==================== Appels SOAP (simulés - à remplacer par le vrai client CXF) ====================
+    // ==================== Appels SOAP via CXF ====================
 
     private ErsResult callRequestTopup(String txnId, String clientReference,
                                         String beneficiaryMsisdn, BigDecimal amount, String productId) {
-        // TODO: Remplacer par l'appel CXF réel via JaxWsProxyFactoryBean
-        // Paramètres SOAP selon la spec ERS :
-        // channel = "WebService"
-        // clientId = clientId
-        // initiatorPrincipalId.type = "RESELLERUSER", .id = initiatorPrincipalId
-        // senderPrincipalId.type = "RESELLERID"
-        // topupPrincipalId.type = "SUBSCRIBERMSISDN", .id = beneficiaryMsisdn
-        // topupAccountSpecifier.accountTypeId = productId != null ? "DATA_BUNDLE" : "AIRTIME"
-        // productId = productId (pour bundles)
-        // amount.currency = "FCFA", .value = amount
-        // clientReference = clientReference
-        throw new UnsupportedOperationException("Implémentation CXF à connecter");
+        RequestTopupRequest req = new RequestTopupRequest();
+        req.setChannel("WebService");
+        req.setClientId(clientId);
+        req.setInitiatorPrincipalId(new PrincipalId("RESELLERUSER", initiatorPrincipalId));
+        req.setSenderPrincipalId(new PrincipalId("RESELLERID", null));
+        req.setTopupPrincipalId(new PrincipalId("SUBSCRIBERMSISDN", beneficiaryMsisdn));
+        AccountSpecifier specifier = new AccountSpecifier();
+        specifier.setAccountTypeId(productId != null ? "DATA_BUNDLE" : "AIRTIME");
+        req.setTopupAccountSpecifier(specifier);
+        req.setProductId(productId);
+        req.setAmount(new ErsAmount(amount, "FCFA"));
+        req.setClientReference(clientReference);
+
+        RequestTopupResponse resp = ersTopupService.requestTopup(req);
+        return new ErsResult(resp.getResultCode(), resp.getResultDescription(), resp.getErsTransactionId());
     }
 
     private ErsResult callGetTransactionStatus(String clientReference) {
-        // TODO: Remplacer par l'appel CXF réel
-        throw new UnsupportedOperationException("Implémentation CXF à connecter");
+        GetTransactionStatusRequest req = new GetTransactionStatusRequest();
+        req.setClientReference(clientReference);
+
+        GetTransactionStatusResponse resp = ersTopupService.getTransactionStatus(req);
+        return new ErsResult(resp.getResultCode(), resp.getStatus(), resp.getErsTransactionId());
     }
 
     private BigDecimal callRequestPrincipalInformation() {
-        // TODO: Remplacer par l'appel CXF réel
-        throw new UnsupportedOperationException("Implémentation CXF à connecter");
+        RequestPrincipalInformationRequest req = new RequestPrincipalInformationRequest();
+        req.setPrincipalId(new PrincipalId("RESELLERID", initiatorPrincipalId));
+
+        RequestPrincipalInformationResponse resp = ersTopupService.requestPrincipalInformation(req);
+        if (resp.getResultCode() != 0) {
+            log.warn("[ERS] requestPrincipalInformation code={}, status={}", resp.getResultCode(), resp.getStatus());
+            return BigDecimal.ZERO;
+        }
+        return resp.getBalance() != null ? resp.getBalance() : BigDecimal.ZERO;
     }
 
+    /**
+     * Codes ERS définitivement échoués per spec section 3.5 — pas de retry.
+     * 20, 21 : MSISDN invalide/inconnu
+     * 30     : Produit indisponible
+     * 40     : Plafond ERS (solde dealer insuffisant)
+     *
+     * Codes transitoires (retryable) : 10, 11, 12 (timeout/busy), 99 (erreur interne ERS)
+     */
     private boolean isDefinitiveFailureCode(int resultCode) {
-        // Codes ERS définitivement échoués (à affiner selon la documentation Expresso)
-        return resultCode != 0 && resultCode != 1 && resultCode != 2;
+        return resultCode == 20
+            || resultCode == 21
+            || resultCode == 30
+            || resultCode == 40;
     }
 
     private void logExpressoCall(String correlationId, String txnId, String clientReference,
                                   String operation, Integer resultCode, String ersReference,
                                   long durationMs, String errorType) {
         expressoCallLogService.indexCall(ExpressoCallDocument.builder()
-            .id(correlationId + "-" + operation + "-1")
+            .id(correlationId + "-" + operation + "-" + Instant.now().toEpochMilli())
             .correlationId(correlationId)
             .txnId(txnId)
             .clientReference(clientReference)

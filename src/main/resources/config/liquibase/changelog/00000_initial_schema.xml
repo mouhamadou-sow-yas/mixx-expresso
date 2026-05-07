@@ -59,19 +59,22 @@
             <column name="last_modified_by" type="varchar(50)"/>
             <column name="last_modified_date" type="datetime"/>
         </createTable>
-        <insert tableName="jhi_user">
-            <column name="login" value="admin"/>
-            <column name="password_hash" value="$2a$10$gSAhZrxMllrbgj/kkK9UceBPpChGWJA7SYIb1Mqo.n5aNLq1/oRrC"/>
-            <column name="first_name" value="Admin"/>
-            <column name="last_name" value="Mixx"/>
-            <column name="email" value="admin@mixx.sn"/>
-            <column name="activated" valueBoolean="true"/>
-            <column name="lang_key" value="fr"/>
-            <column name="created_by" value="system"/>
-            <column name="created_date" valueDate="now()"/>
-            <column name="last_modified_by" value="system"/>
-            <column name="last_modified_date" valueDate="now()"/>
-        </insert>
+    </changeSet>
+
+    <changeSet id="00000-02b" author="mixx-expresso">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM jhi_user WHERE login = 'admin'</sqlCheck>
+        </preConditions>
+        <loadData
+            file="config/liquibase/data/user.csv"
+            separator=";"
+            tableName="jhi_user"
+            usePreparedStatements="true">
+            <column name="id"                 type="numeric"/>
+            <column name="activated"          type="boolean"/>
+            <column name="created_date"       type="datetime"/>
+            <column name="last_modified_date" type="datetime"/>
+        </loadData>
     </changeSet>
 
     <!-- ============================================================ -->
@@ -93,10 +96,13 @@
         <addForeignKeyConstraint baseTableName="jhi_user_authority" baseColumnNames="authority_name"
             referencedTableName="jhi_authority" referencedColumnNames="name"
             constraintName="fk_user_authority_authority"/>
-        <insert tableName="jhi_user_authority">
-            <column name="user_id" valueComputed="(SELECT id FROM jhi_user WHERE login = 'admin')"/>
-            <column name="authority_name" value="ROLE_ADMIN"/>
-        </insert>
+        <loadData
+            file="config/liquibase/data/user_authority.csv"
+            separator=";"
+            tableName="jhi_user_authority"
+            usePreparedStatements="true">
+            <column name="user_id" type="numeric"/>
+        </loadData>
     </changeSet>
 
     <!-- ============================================================ -->

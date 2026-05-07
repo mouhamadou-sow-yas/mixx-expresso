@@ -88,6 +88,7 @@ services:
     networks:
       - monitoring-network
       - frontend-network
+      - elk-network
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
       interval: 15s

@@ -84,6 +84,23 @@ services:
         max-size: "50m"
         max-file: "5"
 
+  es-init:
+    image: curlimages/curl:8.5.0
+    container_name: es-init-prod
+    volumes:
+      - ./elasticsearch/elastic-index-template-init.sh:/init.sh:ro
+    entrypoint: ["/bin/sh", "/init.sh"]
+    environment:
+      - ES_URL=http://elasticsearch:9200
+      - ES_USERNAME=elastic
+      - ES_PASSWORD=${ELASTIC_PASSWORD}
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - elk-network
+    restart: "no"
+
   filebeat:
     image: docker.elastic.co/beats/filebeat:8.16.1
     container_name: filebeat-prod
@@ -99,6 +116,8 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
+      es-init:
+        condition: service_completed_successfully
     networks:
       - elk-network
       - backend-network

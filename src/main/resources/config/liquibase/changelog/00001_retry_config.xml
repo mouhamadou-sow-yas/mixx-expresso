@@ -29,7 +29,7 @@
             <column name="max_attempts" valueNumeric="5"/>
             <column name="delay_seconds" valueNumeric="30"/>
             <column name="expresso_timeout_ms" valueNumeric="15000"/>
-            <column name="updated_at" valueDate="now()"/>
+            <column name="updated_at" valueComputed="GETDATE()"/>
             <column name="updated_by" value="system"/>
         </insert>
     </changeSet>

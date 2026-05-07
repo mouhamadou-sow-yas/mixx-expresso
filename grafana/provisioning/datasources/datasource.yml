@@ -13,6 +13,10 @@ datasources:
     access: proxy
     url: http://elasticsearch:9200
     database: mixx-expresso-logs-*
+    basicAuth: true
+    basicAuthUser: ${ELASTIC_USERNAME:-elastic}
+    secureJsonData:
+      basicAuthPassword: ${ELASTIC_PASSWORD:-}
     jsonData:
       timeField: "@timestamp"
       esVersion: "8.0.0"

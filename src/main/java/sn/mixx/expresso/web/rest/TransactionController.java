@@ -15,7 +15,7 @@ import sn.mixx.expresso.service.transaction.TransactionService;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/transactions")
+@RequestMapping("/v1/transactions")
 @RequiredArgsConstructor
 public class TransactionController {
 

@@ -11,6 +11,8 @@ services:
       - ES_SERVER_URLS=http://elasticsearch:9200
       - ES_USERNAME=elastic
       - ES_PASSWORD=${ELASTIC_PASSWORD}
+      - ES_VERSION=8
+      - ES_NUM_REPLICAS=0
       - LOG_LEVEL=warn
     expose:
       - "16686"
@@ -19,6 +21,8 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
+      es-init:
+        condition: service_completed_successfully
     networks:
       - elk-network
       - backend-network

@@ -1,12 +1,19 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <databaseChangeLog
     xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.24.xsd">
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <property name="now"          value="GETDATE()"          dbms="mssql"/>
+    <property name="datetimeType" value="datetime"            dbms="mssql"/>
+    <property name="floatType"    value="float"               dbms="mssql"/>
+    <property name="clobType"     value="nvarchar(max)"       dbms="mssql"/>
+    <property name="blobType"     value="varbinary(max)"      dbms="mssql"/>
+    <property name="uuidType"     value="varchar(36)"         dbms="mssql"/>
+    <property name="timeType"     value="time"                dbms="mssql"/>
 
     <include file="config/liquibase/changelog/00000_initial_schema.xml" relativeToChangelogFile="false"/>
-    <include file="config/liquibase/changelog/00001_retry_config.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/00001_retry_config.xml"   relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/00002_configuration_data.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/00003_bundle_catalog.xml" relativeToChangelogFile="false"/>
 
