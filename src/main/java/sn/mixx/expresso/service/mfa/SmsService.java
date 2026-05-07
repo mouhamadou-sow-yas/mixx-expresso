@@ -41,7 +41,7 @@ public class SmsService {
     }
 
     public Mono<Boolean> sendOtp(String phoneNumber, String otpCode) {
-        String message = String.format("Votre code de verification MIXX est: %s. Valide pendant 5 minutes.", otpCode);
+        String message = String.format("Votre code de verification est: %s. Valide pendant 5 minutes.", otpCode);
         return sendSms(phoneNumber, message);
     }
 
