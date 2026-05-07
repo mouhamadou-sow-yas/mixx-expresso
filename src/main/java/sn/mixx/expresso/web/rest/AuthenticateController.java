@@ -108,13 +108,19 @@ public class AuthenticateController {
     private Mono<ResponseEntity<MfaAuthenticationResponse>> handleMfaAuthentication(
         sn.mixx.expresso.domain.User user, Authentication auth, boolean rememberMe) {
         String otpCode = otpService.generateOtpCode();
+        String maskedPhone = smsService.maskPhoneNumber(user.getPhoneNumber());
         return otpService.createOtpSession(user.getLogin(), otpCode)
-            .map(mfaToken -> {
-                smsService.sendOtp(user.getPhoneNumber(), otpCode).subscribe();
-                String maskedPhone = smsService.maskPhoneNumber(user.getPhoneNumber());
-                log.debug("OTP envoyé pour {} au {}", user.getLogin(), maskedPhone);
-                return ResponseEntity.ok(MfaAuthenticationResponse.mfaRequired(mfaToken, maskedPhone));
-            });
+            .flatMap(mfaToken -> smsService.sendOtp(user.getPhoneNumber(), otpCode)
+                .flatMap(sent -> {
+                    if (!sent) {
+                        log.error("Échec envoi OTP pour {} au {}", user.getLogin(), maskedPhone);
+                        return Mono.error(new MfaException(MfaErrorCode.OTP_SEND_FAILED,
+                            "Impossible d'envoyer le code OTP. Veuillez réessayer."));
+                    }
+                    log.debug("OTP envoyé pour {} au {}", user.getLogin(), maskedPhone);
+                    return Mono.just(ResponseEntity.ok(MfaAuthenticationResponse.mfaRequired(mfaToken, maskedPhone)));
+                })
+            );
     }
 
     @PostMapping("/authenticate/verify-otp")
