@@ -16,6 +16,13 @@ public class ExpressoMockProperties {
     /** Délai simulé en ms pour reproduire une latence réaliste */
     private int delayMs = 200;
 
+    /**
+     * Si true : requestTopup bloque indéfiniment → Reactor timeout() se déclenche
+     * → transaction passe en PENDING + retry scheduler prend le relai.
+     * Utiliser avec EXPRESSO_TIMEOUT_MS=2000 pour des tests rapides.
+     */
+    private boolean forceTimeout = false;
+
     private final RequestTopup requestTopup = new RequestTopup();
     private final GetTransactionStatus getTransactionStatus = new GetTransactionStatus();
     private final RequestPrincipalInformation requestPrincipalInformation = new RequestPrincipalInformation();

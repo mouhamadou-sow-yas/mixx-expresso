@@ -20,6 +20,9 @@ public class WebClientConfig {
     @Value("${mobiquity.url_base}")
     private String mobiquityBaseUrl;
 
+    @Value("${talend.url_mfs_base}")
+    private String talendBaseUrl;
+
     @Bean
     public WebClient.Builder webClientMobiquity() throws SSLException {
         SslContext sslContext = SslContextBuilder
@@ -35,6 +38,24 @@ public class WebClientConfig {
             .clientConnector(new ReactorClientHttpConnector(httpClient))
             .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
             .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+    }
+
+    @Bean
+    public WebClient webClientTalend() throws SSLException {
+        SslContext sslContext = SslContextBuilder
+            .forClient()
+            .trustManager(InsecureTrustManagerFactory.INSTANCE)
+            .build();
+
+        HttpClient httpClient = HttpClient.create()
+            .secure(t -> t.sslContext(sslContext));
+
+        return WebClient.builder()
+            .baseUrl(talendBaseUrl)
+            .clientConnector(new ReactorClientHttpConnector(httpClient))
+            .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+            .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .build();
     }
 
     @Bean

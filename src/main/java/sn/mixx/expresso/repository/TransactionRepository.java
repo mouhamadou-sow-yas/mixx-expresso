@@ -29,4 +29,33 @@ public interface TransactionRepository extends ReactiveCrudRepository<Transactio
 
     @Query("SELECT COALESCE(SUM(amount + fees), 0) FROM transactions WHERE client_msisdn = :msisdn AND status = 'COMPLETED' AND created_at >= :startOfMonth")
     Mono<java.math.BigDecimal> sumMonthlyAmountByMsisdn(String msisdn, Instant startOfMonth);
+
+    @Query("""
+        SELECT * FROM transactions
+        WHERE client_msisdn = :msisdn
+          AND (:status IS NULL OR status = :status)
+          AND (:type IS NULL OR type = :type)
+          AND (:from IS NULL OR created_at >= :from)
+          AND (:to IS NULL OR created_at <= :to)
+        ORDER BY created_at DESC
+        OFFSET :offset ROWS FETCH NEXT :size ROWS ONLY
+        """)
+    Flux<Transaction> findByClientMsisdnFiltered(
+        String msisdn, String status, String type,
+        Instant from, Instant to,
+        int offset, int size
+    );
+
+    @Query("""
+        SELECT COUNT(*) FROM transactions
+        WHERE client_msisdn = :msisdn
+          AND (:status IS NULL OR status = :status)
+          AND (:type IS NULL OR type = :type)
+          AND (:from IS NULL OR created_at >= :from)
+          AND (:to IS NULL OR created_at <= :to)
+        """)
+    Mono<Long> countByClientMsisdnFiltered(
+        String msisdn, String status, String type,
+        Instant from, Instant to
+    );
 }

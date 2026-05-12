@@ -44,6 +44,10 @@ public class PartnerAuthenticationFilter implements WebFilter {
         }
 
         return partnerSecureService.validatePartnerCredentials(codePartner, apiKey, apiSecret)
+            .onErrorResume(error -> {
+                log.error("[PARTNER-AUTH] Erreur lors de la validation des credentials pour: {}", codePartner, error);
+                return Mono.just(false);
+            })
             .flatMap(isValid -> {
                 if (!isValid) {
                     log.warn("[PARTNER-AUTH] Credentials invalides pour: {}", codePartner);
@@ -51,10 +55,6 @@ public class PartnerAuthenticationFilter implements WebFilter {
                 }
                 log.debug("[PARTNER-AUTH] Authentification réussie pour: {}", codePartner);
                 return chain.filter(exchange);
-            })
-            .onErrorResume(error -> {
-                log.error("[PARTNER-AUTH] Erreur authentification pour: {}", codePartner, error);
-                return sendUnauthorized(exchange, "Erreur d'authentification");
             });
     }
 

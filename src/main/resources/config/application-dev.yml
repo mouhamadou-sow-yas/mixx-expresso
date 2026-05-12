@@ -72,6 +72,7 @@ expresso:
   timeout_ms: ${EXPRESSO_TIMEOUT_MS:15000}
   mock:
     enabled: ${EXPRESSO_MOCK_ENABLED:true}
+    force-timeout: ${EXPRESSO_MOCK_FORCE_TIMEOUT:false}
     delay-ms: ${EXPRESSO_MOCK_DELAY_MS:200}
     request-topup:
       result-code: ${EXPRESSO_MOCK_TOPUP_RESULT_CODE:0}
@@ -85,16 +86,27 @@ expresso:
       balance: ${EXPRESSO_MOCK_BALANCE:5000000}
       currency: ${EXPRESSO_MOCK_CURRENCY:XOF}
 
+talend:
+  url_mfs_base: ${URL_TALEND_BASE}
+
 mobiquity:
   url_base: ${URL_MOBIQUITY_BASE}
-  url_cancel_tx: ${URL_CANCEL_TX}
   timeout: ${MOBIQUITY_TIMEOUT:30}
+  merchant_msisdn: ${MOBIQUITY_MERCHANT_MSISDN:767264548}
+  merchant_product_id: ${MOBIQUITY_MERCHANT_PRODUCT_ID:12}
+  customer_product_id: ${MOBIQUITY_CUSTOMER_PRODUCT_ID:12}
+  currency_code: ${MOBIQUITY_CURRENCY_CODE:101}
 
 elasticsearch:
   host: ${ELASTIC_HOST:localhost}
   port: ${ELASTIC_PORT:9201}
   username: ${ELASTIC_USERNAME:}
   password: ${ELASTIC_PASSWORD:}
+  default:
+    retry:
+      count: ${ELASTICSEARCH_DEFAULT_RETRY_COUNT:5}
+  pending:
+    initial-delay-seconds: ${ELASTICSEARCH_PENDING_INITIAL_DELAY_SECONDS:120}
 
 redis:
   host: ${REDIS_HOST:localhost}

@@ -12,12 +12,15 @@ import sn.mixx.expresso.exception.MobiquityRefundException;
 import sn.mixx.expresso.exception.TransactionNotFoundException;
 import sn.mixx.expresso.repository.TransactionRepository;
 import sn.mixx.expresso.repository.TransactionStatusHistoryRepository;
+import sn.mixx.expresso.domain.enums.AuditAction;
+import sn.mixx.expresso.service.audit.AuditService;
 import sn.mixx.expresso.service.elastic.ElasticPendingTransactionService;
 import sn.mixx.expresso.service.expresso.ExpressoAdapter;
 import sn.mixx.expresso.service.mobiquity.MobiquityService;
 import sn.mixx.expresso.service.notification.NotificationService;
 
 import java.time.Instant;
+import java.util.Map;
 
 /**
  * Service back-office : recherche, relance manuelle, annulation, remboursement manuel.
@@ -34,6 +37,7 @@ public class BackOfficeService {
     private final ExpressoAdapter expressoAdapter;
     private final ElasticPendingTransactionService elasticPendingService;
     private final NotificationService notificationService;
+    private final AuditService auditService;
 
     public Flux<Transaction> searchTransactions(String status, String clientMsisdn,
                                                  String txnId, Instant from, Instant to) {
@@ -72,14 +76,26 @@ public class BackOfficeService {
                         "Seules les transactions PENDING/FAILED/EXPIRED peuvent être relancées. Statut actuel: " + transaction.getStatus()));
                 }
 
+                auditService.log(
+                    AuditAction.RETRY, "TRANSACTION", transaction.getTxnId(),
+                    "OPERATOR:" + operatorLogin,
+                    Map.of("txnId", transaction.getTxnId(), "operator", operatorLogin),
+                    null, "INFO", transaction.getCorrelationId());
+
                 return expressoAdapter.getTransactionStatus(transaction.getClientReference(), transaction.getCorrelationId())
                     .flatMap(status -> switch (status) {
                         case "SUCCESS" -> {
                             transaction.setStatus("COMPLETED");
                             transaction.setCompletedAt(Instant.now());
                             transaction.setUpdatedAt(Instant.now());
+                            auditService.log(
+                                AuditAction.STATUS_CHANGE, "TRANSACTION", transaction.getTxnId(),
+                                "OPERATOR:" + operatorLogin,
+                                Map.of("oldStatus", "PENDING"),
+                                Map.of("newStatus", "COMPLETED"),
+                                "SUCCESS", transaction.getCorrelationId());
                             yield transactionRepository.save(transaction)
-                                .then(saveHistory(transaction.getId(), transaction.getStatus(), "COMPLETED",
+                                .then(saveHistory(transaction.getId(), "PENDING", "COMPLETED",
                                     "Relance manuelle par " + operatorLogin, "OPERATOR:" + operatorLogin))
                                 .then(notificationService.sendSuccessNotification(transaction))
                                 .thenReturn(transaction);
@@ -87,8 +103,14 @@ public class BackOfficeService {
                         case "FAILED" -> {
                             transaction.setStatus("FAILED");
                             transaction.setUpdatedAt(Instant.now());
+                            auditService.log(
+                                AuditAction.STATUS_CHANGE, "TRANSACTION", transaction.getTxnId(),
+                                "OPERATOR:" + operatorLogin,
+                                Map.of("oldStatus", "PENDING"),
+                                Map.of("newStatus", "FAILED"),
+                                "FAILURE", transaction.getCorrelationId());
                             yield transactionRepository.save(transaction)
-                                .then(saveHistory(transaction.getId(), transaction.getStatus(), "FAILED",
+                                .then(saveHistory(transaction.getId(), "PENDING", "FAILED",
                                     "Échec confirmé par relance manuelle de " + operatorLogin, "OPERATOR:" + operatorLogin))
                                 .thenReturn(transaction);
                         }
@@ -116,6 +138,12 @@ public class BackOfficeService {
                 transaction.setStatus("FAILED");
                 transaction.setFailureReason("Annulée par opérateur: " + operatorLogin);
                 transaction.setUpdatedAt(Instant.now());
+                auditService.log(
+                    AuditAction.BO_INTERVENTION, "TRANSACTION", transaction.getTxnId(),
+                    "OPERATOR:" + operatorLogin,
+                    Map.of("action", "CANCEL", "operator", operatorLogin),
+                    Map.of("newStatus", "FAILED"),
+                    "SUCCESS", transaction.getCorrelationId());
                 return transactionRepository.save(transaction)
                     .then(saveHistory(transaction.getId(), "CREATED", "FAILED",
                         "Annulation manuelle par " + operatorLogin, "OPERATOR:" + operatorLogin))
@@ -152,6 +180,12 @@ public class BackOfficeService {
                         transaction.setRefundConfirmed(true);
                         transaction.setStatus("REFUNDED");
                         transaction.setUpdatedAt(Instant.now());
+                        auditService.log(
+                            AuditAction.REFUND, "TRANSACTION", transaction.getTxnId(),
+                            "OPERATOR:" + operatorLogin,
+                            Map.of("operator", operatorLogin, "amount", transaction.getAmount()),
+                            Map.of("refundRef", refundRef, "status", "REFUNDED"),
+                            "SUCCESS", transaction.getCorrelationId());
                         return transactionRepository.save(transaction)
                             .then(saveHistory(transaction.getId(), transaction.getStatus(), "REFUNDED",
                                 "Remboursement manuel par " + operatorLogin, "OPERATOR:" + operatorLogin))

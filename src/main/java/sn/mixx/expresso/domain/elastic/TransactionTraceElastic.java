@@ -15,7 +15,7 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(indexName = "trace-transactions-expresso", createIndex = false)
+@Document(indexName = "trace-transactions-expresso", createIndex = true)
 public class TransactionTraceElastic {
 
     @Id

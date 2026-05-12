@@ -8,19 +8,13 @@ import sn.mixx.expresso.config.ExpressoMockProperties;
 
 /**
  * Implémentation mock de ErsTopupService — active quand expresso.mock.enabled=true.
- * Toutes les valeurs de retour sont configurables via variables d'environnement.
  *
- * Variables d'environnement disponibles :
+ * Variables d'environnement :
  *   EXPRESSO_MOCK_ENABLED=true
- *   EXPRESSO_MOCK_DELAY_MS=200
- *   EXPRESSO_MOCK_TOPUP_RESULT_CODE=0
- *   EXPRESSO_MOCK_TOPUP_DESCRIPTION=Mock Success
- *   EXPRESSO_MOCK_TOPUP_ERS_TXN_ID_PREFIX=ERS_MOCK_
+ *   EXPRESSO_MOCK_TOPUP_RESULT_CODE=0          (0 = succès)
  *   EXPRESSO_MOCK_STATUS_RESULT_CODE=0
- *   EXPRESSO_MOCK_STATUS=COMPLETED
- *   EXPRESSO_MOCK_BALANCE_RESULT_CODE=0
+ *   EXPRESSO_MOCK_STATUS=SUCCESS               (valeur du Status: dans resultDescription)
  *   EXPRESSO_MOCK_BALANCE=5000000
- *   EXPRESSO_MOCK_CURRENCY=XOF
  */
 @Slf4j
 @Component
@@ -32,24 +26,27 @@ public class ErsTopupServiceMock implements ErsTopupService {
 
     @Override
     public RequestTopupResponse requestTopup(RequestTopupRequest request) {
+        if (props.isForceTimeout()) {
+            log.warn("[ERS-MOCK] forceTimeout=true — blocage du thread pour déclencher le timeout Reactor");
+            simulateTimeout();
+        }
         simulateDelay();
 
+        String clientRef = request.getContext() != null ? request.getContext().getClientReference() : "UNKNOWN";
+        String beneficiaryMsisdn = request.getTopupPrincipalId() != null
+            ? maskMsisdn(request.getTopupPrincipalId().getId()) : "***";
+        Object amount = request.getAmount() != null ? request.getAmount().getValue() : null;
+        String productId = request.getProductId();
         int resultCode = props.getRequestTopup().getResultCode();
-        String ersTransactionId = props.getRequestTopup().getErsTransactionIdPrefix()
-            + (request.getClientReference() != null ? request.getClientReference() : "UNKNOWN");
+        String ersRef = props.getRequestTopup().getErsTransactionIdPrefix() + clientRef;
 
-        log.warn("[ERS-MOCK] requestTopup — clientRef={}, msisdn={}, amount={}, product={} → resultCode={}, ersId={}",
-            request.getClientReference(),
-            maskMsisdn(request.getTopupPrincipalId() != null ? request.getTopupPrincipalId().getId() : null),
-            request.getAmount() != null ? request.getAmount().getValue() : null,
-            request.getProductId(),
-            resultCode,
-            ersTransactionId);
+        log.warn("[ERS-MOCK] requestTopup — clientRef={}, msisdn={}, amount={}, product={} → resultCode={}, ersRef={}",
+            clientRef, beneficiaryMsisdn, amount, productId, resultCode, ersRef);
 
         RequestTopupResponse resp = new RequestTopupResponse();
         resp.setResultCode(resultCode);
         resp.setResultDescription(props.getRequestTopup().getResultDescription());
-        resp.setErsTransactionId(ersTransactionId);
+        resp.setErsReference(ersRef);
         return resp;
     }
 
@@ -57,16 +54,21 @@ public class ErsTopupServiceMock implements ErsTopupService {
     public GetTransactionStatusResponse getTransactionStatus(GetTransactionStatusRequest request) {
         simulateDelay();
 
+        String clientRef = request.getContext() != null ? request.getContext().getClientReference() : "UNKNOWN";
         int resultCode = props.getGetTransactionStatus().getResultCode();
         String status = props.getGetTransactionStatus().getStatus();
+        String ersRef = "ERS_MOCK_STATUS_" + clientRef;
 
         log.warn("[ERS-MOCK] getTransactionStatus — clientRef={} → resultCode={}, status={}",
-            request.getClientReference(), resultCode, status);
+            clientRef, resultCode, status);
+
+        // Format réel : "ERSTransactionId= xxx;Status:SUCCESS"
+        String resultDescription = "ERSTransactionId= " + ersRef + ";Status:" + status;
 
         GetTransactionStatusResponse resp = new GetTransactionStatusResponse();
         resp.setResultCode(resultCode);
-        resp.setStatus(status);
-        resp.setErsTransactionId("ERS_MOCK_STATUS_" + request.getClientReference());
+        resp.setResultDescription(resultDescription);
+        resp.setErsReference(ersRef);
         return resp;
     }
 
@@ -95,6 +97,15 @@ public class ErsTopupServiceMock implements ErsTopupService {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
+        }
+    }
+
+    /** Bloque le thread jusqu'à ce que le timeout Reactor se déclenche. */
+    private void simulateTimeout() {
+        try {
+            Thread.sleep(60_000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 

@@ -190,11 +190,15 @@ expresso:
       result-code: ${EXPRESSO_MOCK_BALANCE_RESULT_CODE:0}
       balance: ${EXPRESSO_MOCK_BALANCE:5000000}
       currency: ${EXPRESSO_MOCK_CURRENCY:XOF}
-
+talend:
+  url_mfs_base: ${URL_TALEND_BASE}
 mobiquity:
   url_base: ${URL_MOBIQUITY_BASE}
-  url_cancel_tx: ${URL_CANCEL_TX}
   timeout: ${MOBIQUITY_TIMEOUT}
+  merchant_msisdn: ${MOBIQUITY_MERCHANT_MSISDN}
+  merchant_product_id: ${MOBIQUITY_MERCHANT_PRODUCT_ID:12}
+  customer_product_id: ${MOBIQUITY_CUSTOMER_PRODUCT_ID:12}
+  currency_code: ${MOBIQUITY_CURRENCY_CODE:101}
   status_check_timeout_seconds: ${MOBIQUITY_STATUS_CHECK_TIMEOUT:10}
   pending_cutoff_minutes: ${MOBIQUITY_PENDING_CUTOFF_MINUTES:2}
   pending_check_delay_ms: ${MOBIQUITY_PENDING_CHECK_DELAY_MS:60000}

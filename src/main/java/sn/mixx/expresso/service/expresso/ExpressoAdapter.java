@@ -146,58 +146,87 @@ public class ExpressoAdapter {
 
     // ==================== Appels SOAP via CXF ====================
 
+    private ClientContext buildContext(String clientReference) {
+        ClientContext ctx = new ClientContext();
+        ctx.setChannel("WebService");
+        ctx.setClientId(clientId);
+        ctx.setClientReference(clientReference);
+        ctx.setClientRequestTimeout(timeoutMs);
+        ctx.setPrepareOnly(false);
+        ctx.setInitiatorPrincipalId(new PrincipalId("RESELLERUSER", initiatorPrincipalId, "webuser"));
+        ctx.setPassword(initiatorPassword);
+        return ctx;
+    }
+
     private ErsResult callRequestTopup(String txnId, String clientReference,
                                         String beneficiaryMsisdn, BigDecimal amount, String productId) {
         RequestTopupRequest req = new RequestTopupRequest();
-        req.setChannel("WebService");
-        req.setClientId(clientId);
-        req.setInitiatorPrincipalId(new PrincipalId("RESELLERUSER", initiatorPrincipalId));
-        req.setSenderPrincipalId(new PrincipalId("RESELLERID", null));
+        req.setContext(buildContext(clientReference));
+        req.setSenderPrincipalId(new PrincipalId("RESELLERID", initiatorPrincipalId));
         req.setTopupPrincipalId(new PrincipalId("SUBSCRIBERMSISDN", beneficiaryMsisdn));
-        AccountSpecifier specifier = new AccountSpecifier();
-        specifier.setAccountTypeId(productId != null ? "DATA_BUNDLE" : "AIRTIME");
-        req.setTopupAccountSpecifier(specifier);
-        req.setProductId(productId);
+        req.setSenderAccountSpecifier(new AccountSpecifier("RESELLER"));
+        req.setTopupAccountSpecifier(new AccountSpecifier(productId != null ? "DATA_BUNDLE" : "AIRTIME"));
+        req.setProductId(productId != null ? productId : "TOPUP");
         req.setAmount(new ErsAmount(amount, "FCFA"));
-        req.setClientReference(clientReference);
 
         RequestTopupResponse resp = ersTopupService.requestTopup(req);
-        return new ErsResult(resp.getResultCode(), resp.getResultDescription(), resp.getErsTransactionId());
+        return new ErsResult(resp.getResultCode(), resp.getResultDescription(), resp.getErsReference());
     }
 
     private ErsResult callGetTransactionStatus(String clientReference) {
         GetTransactionStatusRequest req = new GetTransactionStatusRequest();
-        req.setClientReference(clientReference);
+        req.setContext(buildContext(clientReference));
+        req.setResellerPrincipalId(new PrincipalId("RESELLERID", initiatorPrincipalId));
 
         GetTransactionStatusResponse resp = ersTopupService.getTransactionStatus(req);
-        return new ErsResult(resp.getResultCode(), resp.getStatus(), resp.getErsTransactionId());
+        // Le statut est dans resultDescription : "ERSTransactionId=...;Status:SUCCESS"
+        String parsedStatus = parseStatusFromDescription(resp.getResultDescription());
+        return new ErsResult(resp.getResultCode(), parsedStatus, resp.getErsReference());
     }
 
     private BigDecimal callRequestPrincipalInformation() {
         RequestPrincipalInformationRequest req = new RequestPrincipalInformationRequest();
+        req.setContext(buildContext("BALANCE-" + System.currentTimeMillis()));
         req.setPrincipalId(new PrincipalId("RESELLERID", initiatorPrincipalId));
 
         RequestPrincipalInformationResponse resp = ersTopupService.requestPrincipalInformation(req);
         if (resp.getResultCode() != 0) {
-            log.warn("[ERS] requestPrincipalInformation code={}, status={}", resp.getResultCode(), resp.getStatus());
+            log.warn("[ERS] requestPrincipalInformation code={}", resp.getResultCode());
             return BigDecimal.ZERO;
         }
         return resp.getBalance() != null ? resp.getBalance() : BigDecimal.ZERO;
     }
 
+    private String parseStatusFromDescription(String description) {
+        if (description == null) return null;
+        // Format: "ERSTransactionId= xxx;Status:SUCCESS"
+        int idx = description.indexOf("Status:");
+        if (idx >= 0) {
+            return description.substring(idx + 7).trim().split(";")[0];
+        }
+        return description;
+    }
+
     /**
-     * Codes ERS définitivement échoués per spec section 3.5 — pas de retry.
-     * 20, 21 : MSISDN invalide/inconnu
-     * 30     : Produit indisponible
-     * 40     : Plafond ERS (solde dealer insuffisant)
-     *
-     * Codes transitoires (retryable) : 10, 11, 12 (timeout/busy), 99 (erreur interne ERS)
+     * Codes ERS définitivement échoués — pas de retry.
+     * Retriables : 0 (SUCCESS), 1 (PENDING_APPROVAL), 93 (SYSTEM_BUSY), 94 (SERVICE_UNAVAILABLE)
      */
     private boolean isDefinitiveFailureCode(int resultCode) {
-        return resultCode == 20
-            || resultCode == 21
-            || resultCode == 30
-            || resultCode == 40;
+        return switch (resultCode) {
+            // Auth / accès
+            case 20, 21, 22, 29 -> true;          // AUTH_FAILED, ACCESS_DENIED, INVALID_PASSWORD, INVALID_INITIATOR
+            // Principals invalides / introuvables
+            case 30, 31, 32 -> true;               // INVALID_RECEIVER/SENDER/TOPUP_PRINCIPAL_ID
+            case 33, 34, 35, 36 -> true;           // INVALID_*_STATE
+            case 37, 38, 39, 40 -> true;           // *_PRINCIPAL_NOT_FOUND
+            // Produit / compte
+            case 41, 42, 43, 44 -> true;           // INVALID_PRODUCT, INVALID_*_ACCOUNT_TYPE
+            case 45, 46, 47 -> true;               // *_ACCOUNT_NOT_FOUND
+            // Système
+            case 90, 91, 92 -> true;               // SYSTEM_ERROR, UNSUPPORTED, LICENSE_REJECTION
+            // Retriables : 10 (REJECTED_BUSINESS_LOGIC), 11, 12, 13, 93, 94
+            default -> false;
+        };
     }
 
     private void logExpressoCall(String correlationId, String txnId, String clientReference,

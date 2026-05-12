@@ -7,15 +7,14 @@ import jakarta.xml.bind.annotation.XmlElement;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class GetTransactionStatusRequest {
 
-    @XmlElement(name = "clientReference")
-    private String clientReference;
+    @XmlElement(name = "context")
+    private ClientContext context;
 
-    public GetTransactionStatusRequest() {}
+    @XmlElement(name = "resellerPrincipalId")
+    private PrincipalId resellerPrincipalId;
 
-    public GetTransactionStatusRequest(String clientReference) {
-        this.clientReference = clientReference;
-    }
-
-    public String getClientReference() { return clientReference; }
-    public void setClientReference(String clientReference) { this.clientReference = clientReference; }
+    public ClientContext getContext() { return context; }
+    public void setContext(ClientContext context) { this.context = context; }
+    public PrincipalId getResellerPrincipalId() { return resellerPrincipalId; }
+    public void setResellerPrincipalId(PrincipalId resellerPrincipalId) { this.resellerPrincipalId = resellerPrincipalId; }
 }

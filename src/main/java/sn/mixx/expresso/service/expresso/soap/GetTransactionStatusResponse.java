@@ -10,16 +10,16 @@ public class GetTransactionStatusResponse {
     @XmlElement(name = "resultCode")
     private int resultCode;
 
-    @XmlElement(name = "status")
-    private String status;
+    @XmlElement(name = "resultDescription")
+    private String resultDescription;
 
-    @XmlElement(name = "ersTransactionId")
-    private String ersTransactionId;
+    @XmlElement(name = "ersReference")
+    private String ersReference;
 
     public int getResultCode() { return resultCode; }
     public void setResultCode(int resultCode) { this.resultCode = resultCode; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-    public String getErsTransactionId() { return ersTransactionId; }
-    public void setErsTransactionId(String ersTransactionId) { this.ersTransactionId = ersTransactionId; }
+    public String getResultDescription() { return resultDescription; }
+    public void setResultDescription(String resultDescription) { this.resultDescription = resultDescription; }
+    public String getErsReference() { return ersReference; }
+    public void setErsReference(String ersReference) { this.ersReference = ersReference; }
 }

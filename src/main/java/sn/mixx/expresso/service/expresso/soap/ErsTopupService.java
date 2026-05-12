@@ -17,7 +17,7 @@ import jakarta.jws.soap.SOAPBinding;
  */
 @WebService(
     name = "ErsTopupService",
-    targetNamespace = "http://topupservice.expresso.mixx.sn/"
+    targetNamespace = "http://external.interfaces.ers.seamless.com/"
 )
 @SOAPBinding(
     style = SOAPBinding.Style.DOCUMENT,

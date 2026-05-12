@@ -38,7 +38,7 @@ public class AntiFraudService {
             .flatMap(existing -> {
                 log.warn("[ANTI-FRAUD] Doublon détecté: clientReference={}", clientReference);
                 return Mono.<Void>error(new AntiFraudException(
-                    "Transaction en double détectée: " + clientReference, "DUPLICATE"));
+                    "Transaction référence en double détectée: " + clientReference, "DUPLICATE"));
             })
             .switchIfEmpty(Mono.defer(() ->
                 redisTemplate.opsForValue()

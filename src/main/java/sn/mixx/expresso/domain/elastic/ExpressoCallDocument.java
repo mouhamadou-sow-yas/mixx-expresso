@@ -16,7 +16,7 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(indexName = "expresso-calls", createIndex = false)
+@Document(indexName = "expresso-calls", createIndex = true)
 public class ExpressoCallDocument {
 
     @Id

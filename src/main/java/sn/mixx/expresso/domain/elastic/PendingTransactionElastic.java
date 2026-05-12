@@ -12,7 +12,7 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(indexName = "transactions-pending", createIndex = false)
+@Document(indexName = "transactions-pending", createIndex = true)
 public class PendingTransactionElastic {
 
     @Id

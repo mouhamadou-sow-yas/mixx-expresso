@@ -7,6 +7,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.bind.support.WebExchangeBindException;
 import reactor.core.publisher.Mono;
 import sn.mixx.expresso.exception.*;
@@ -66,10 +67,16 @@ public class ExceptionTranslator {
             .body(errorBody(503, "Service Unavailable", ex.getMessage())));
     }
 
+    @ExceptionHandler(WalletNotFoundException.class)
+    public Mono<ResponseEntity<Map<String, Object>>> handleWalletNotFound(WalletNotFoundException ex) {
+        return Mono.just(ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+            .body(txnErrorBody("TXN_WALLET_NOT_FOUND", ex.getMessage())));
+    }
+
     @ExceptionHandler(MobiquityDebitException.class)
     public Mono<ResponseEntity<Map<String, Object>>> handleMobiquityDebit(MobiquityDebitException ex) {
-        return Mono.just(ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
-            .body(errorBody(402, "Payment Required", ex.getMessage())));
+        return Mono.just(ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+            .body(txnErrorBody("TXN_DEBIT_FAILED", ex.getMessage())));
     }
 
     @ExceptionHandler(MobiquityRefundException.class)
@@ -80,15 +87,24 @@ public class ExceptionTranslator {
 
     @ExceptionHandler(AntiFraudException.class)
     public Mono<ResponseEntity<Map<String, Object>>> handleAntiFraud(AntiFraudException ex) {
-        Map<String, Object> body = errorBody(409, "Conflict", ex.getMessage());
-        body.put("reason", ex.getReason());
-        return Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).body(body));
+        return switch (ex.getReason()) {
+            case "DUPLICATE" -> Mono.just(ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(txnErrorBody("TXN_DUPLICATE", ex.getMessage())));
+            case "DAILY_LIMIT_EXCEEDED" -> Mono.just(ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(txnErrorBody("TXN_DAILY_LIMIT_EXCEEDED", ex.getMessage())));
+            case "MONTHLY_LIMIT_EXCEEDED" -> Mono.just(ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(txnErrorBody("TXN_MONTHLY_LIMIT_EXCEEDED", ex.getMessage())));
+            case "RATE_LIMIT_EXCEEDED" -> Mono.just(ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(txnErrorBody("TXN_ANTI_FRAUD_BLOCK", ex.getMessage())));
+            default -> Mono.just(ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(txnErrorBody("TXN_ANTI_FRAUD_BLOCK", ex.getMessage())));
+        };
     }
 
     @ExceptionHandler(InsufficientBalanceException.class)
     public Mono<ResponseEntity<Map<String, Object>>> handleInsufficientBalance(InsufficientBalanceException ex) {
-        return Mono.just(ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
-            .body(errorBody(402, "Insufficient Balance", ex.getMessage())));
+        return Mono.just(ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+            .body(txnErrorBody("TXN_INSUFFICIENT_BALANCE", ex.getMessage())));
     }
 
     @ExceptionHandler(BundleNotFoundException.class)
@@ -115,6 +131,17 @@ public class ExceptionTranslator {
             .body(errorBody(404, "Not Found", ex.getMessage())));
     }
 
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public Mono<ResponseEntity<Map<String, Object>>> handleDataIntegrity(DataIntegrityViolationException ex) {
+        String msg = ex.getMessage() != null ? ex.getMessage().toUpperCase() : "";
+        if (msg.contains("UNIQUE") || msg.contains("DUPLICATE")) {
+            return Mono.just(ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(txnErrorBody("TXN_DUPLICATE", "Transaction déjà soumise avec ce correlationId")));
+        }
+        return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(txnErrorBody("INTERNAL_ERROR", "Erreur base de données")));
+    }
+
     @ExceptionHandler(WebExchangeBindException.class)
     public Mono<ResponseEntity<Map<String, Object>>> handleValidation(WebExchangeBindException ex) {
         Map<String, Object> body = errorBody(400, "Bad Request", "Erreur de validation");
@@ -129,6 +156,13 @@ public class ExceptionTranslator {
         body.put("status", status);
         body.put("title", title);
         body.put("detail", detail);
+        return body;
+    }
+
+    private Map<String, Object> txnErrorBody(String code, String message) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("status", "ERROR");
+        body.put("error", Map.of("code", code, "message", message));
         return body;
     }
 }

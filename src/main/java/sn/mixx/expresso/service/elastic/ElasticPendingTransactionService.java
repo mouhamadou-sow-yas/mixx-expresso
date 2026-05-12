@@ -61,6 +61,9 @@ public class ElasticPendingTransactionService {
     @Value("${elasticsearch.default.retry.count:5}")
     private Integer maxRetryCount;
 
+    @Value("${elasticsearch.pending.initial-delay-seconds:120}")
+    private int initialRetryDelaySeconds;
+
     private final ElasticPendingTransactionRepository pendingRepository;
     private final ReactiveElasticsearchOperations operations;
     private final TransactionRepository transactionRepository;
@@ -82,7 +85,7 @@ public class ElasticPendingTransactionService {
             .type(transaction.getType())
             .retryCount(0)
             .maxRetryCount(maxRetryCount)
-            .nextRetry(Instant.now().plus(2, ChronoUnit.MINUTES))
+            .nextRetry(Instant.now().plusSeconds(initialRetryDelaySeconds))
             .statut(PendingTransactionStatut.PENDING)
             .clientMsisdn(transaction.getClientMsisdn())
             .beneficiaryMsisdn(transaction.getBeneficiaryMsisdn())
@@ -242,6 +245,7 @@ public class ElasticPendingTransactionService {
         pending.setNextRetry(calculateNextRetry(newRetryCount));
         pending.setStatut(PendingTransactionStatut.PENDING);
         pending.setLastUpdatedAt(Instant.now());
+        pending.setTimestamp(Instant.now());
 
         return operations.save(pending)
             .then(transactionRepository.findByTxnId(pending.getTxnId()))

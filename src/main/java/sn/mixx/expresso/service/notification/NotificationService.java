@@ -6,10 +6,13 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import sn.mixx.expresso.domain.Notification;
 import sn.mixx.expresso.domain.Transaction;
+import sn.mixx.expresso.domain.enums.AuditAction;
 import sn.mixx.expresso.repository.NotificationRepository;
+import sn.mixx.expresso.service.audit.AuditService;
 import sn.mixx.expresso.service.mfa.SmsService;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -18,6 +21,7 @@ public class NotificationService {
 
     private final SmsService smsService;
     private final NotificationRepository notificationRepository;
+    private final AuditService auditService;
 
     public Mono<Void> sendSuccessNotification(Transaction transaction) {
         String message = buildSuccessMessage(transaction);
@@ -50,6 +54,14 @@ public class NotificationService {
             .attempts(1)
             .sentAt(Boolean.TRUE.equals(sent) ? Instant.now() : null)
             .build();
+
+        auditService.log(
+            Boolean.TRUE.equals(sent) ? AuditAction.NOTIFICATION_SENT : AuditAction.NOTIFICATION_FAILED,
+            "TRANSACTION", transaction.getTxnId(), "SYSTEM",
+            Map.of("template", templateCode, "msisdn", maskMsisdn(transaction.getClientMsisdn())),
+            Map.of("status", notification.getStatus()),
+            Boolean.TRUE.equals(sent) ? "SUCCESS" : "FAILURE",
+            transaction.getCorrelationId());
 
         return notificationRepository.save(notification).then();
     }
